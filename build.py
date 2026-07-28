@@ -258,15 +258,56 @@ TEMPLATE = r"""<!doctype html>
   .diagram-row.tappable:active .diagram-msg,
   .diagram-row.tappable:active .diagram-line { opacity: 0.5; }
   footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
+  .start-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
+  .picker-group { margin-bottom: 18px; }
+  .picker-label { font-size: 13px; color: var(--muted); margin-bottom: 8px; }
+  .picker-row { display: flex; flex-wrap: wrap; gap: 8px; }
+  .pick-btn {
+    font-size: 15px;
+    padding: 10px 16px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .pick-btn.sel {
+    background: var(--accent-bg);
+    border-color: var(--accent);
+    color: var(--accent);
+    font-weight: 600;
+  }
+  .pick-count { font-size: 13px; color: var(--muted); margin: 4px 0 16px; }
+  .linkbtn {
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 13px;
+    padding: 0;
+    cursor: pointer;
+  }
 </style>
 </head>
 <body>
 <div id="app">
-  <header>
-    <span id="topic-label"></span>
+  <header id="hdr" hidden>
+    <button id="deck-change" class="linkbtn"></button>
     <span id="deck-label"></span>
   </header>
-  <div class="card">
+  <div id="start" class="card" hidden>
+    <div class="start-title">덱 선택</div>
+    <div id="topic-group" class="picker-group">
+      <div class="picker-label">주제</div>
+      <div id="pick-topic" class="picker-row"></div>
+    </div>
+    <div class="picker-group">
+      <div class="picker-label">난이도</div>
+      <div id="pick-diff" class="picker-row"></div>
+    </div>
+    <div id="pick-count" class="pick-count"></div>
+    <button id="start-btn" class="primary">시작</button>
+  </div>
+  <div id="quiz" class="card" hidden>
     <div id="badges" class="badges"></div>
     <div id="question" class="question"></div>
     <div id="answer-area"></div>
@@ -292,11 +333,22 @@ TEMPLATE = r"""<!doctype html>
     return;
   }
 
+  var POOL = [];
   var deck = [];
   var current = null;
   var answered = false;
+  var DIFF_LABEL = { basic: "기본", advanced: "심화" };
+  var sel = { topic: "__all__", difficulty: "__all__" };
 
-  var elTopic = document.getElementById("topic-label");
+  var elHdr = document.getElementById("hdr");
+  var elDeckChange = document.getElementById("deck-change");
+  var elStart = document.getElementById("start");
+  var elQuiz = document.getElementById("quiz");
+  var elTopicGroup = document.getElementById("topic-group");
+  var elPickTopic = document.getElementById("pick-topic");
+  var elPickDiff = document.getElementById("pick-diff");
+  var elPickCount = document.getElementById("pick-count");
+  var elStartBtn = document.getElementById("start-btn");
   var elDeckCount = document.getElementById("deck-label");
   var elBadges = document.getElementById("badges");
   var elQuestion = document.getElementById("question");
@@ -319,7 +371,7 @@ TEMPLATE = r"""<!doctype html>
   }
 
   function nextQuestion() {
-    if (deck.length === 0) deck = shuffle(DATA);
+    if (deck.length === 0) deck = shuffle(POOL);
     return deck.pop();
   }
 
@@ -572,10 +624,10 @@ TEMPLATE = r"""<!doctype html>
     current = q;
     answered = false;
     elBadges.innerHTML = "";
+    elBadges.appendChild(el("span", { cls: "badge", text: DIFF_LABEL[q.difficulty] || q.difficulty }));
     q.tags.forEach(function (t) {
       elBadges.appendChild(el("span", { cls: "badge", text: t }));
     });
-    elTopic.textContent = q.topic;
     elDeckCount.textContent = "남은 " + deck.length + "문제";
     elQuestion.textContent = q.question;
     elQuestion.className = "question" + (looksRaw(q.question) ? " raw" : "");
@@ -598,7 +650,72 @@ TEMPLATE = r"""<!doctype html>
     render(nextQuestion());
   });
 
-  render(nextQuestion());
+  // ---- 덱 선택 화면 ----
+  // 선택지는 데이터에 실제 존재하는 값에서만 만든다. 없는 주제/난이도 버튼은 안 만든다.
+  var topicVals = [];
+  DATA.forEach(function (q) { if (topicVals.indexOf(q.topic) === -1) topicVals.push(q.topic); });
+  var diffVals = ["basic", "advanced"].filter(function (d) {
+    return DATA.some(function (q) { return q.difficulty === d; });
+  });
+
+  function matching() {
+    return DATA.filter(function (q) {
+      return (sel.topic === "__all__" || q.topic === sel.topic) &&
+             (sel.difficulty === "__all__" || q.difficulty === sel.difficulty);
+    });
+  }
+
+  function makeRow(container, key, values, labelFn) {
+    container.innerHTML = "";
+    var opts = [{ v: "__all__", label: "전체" }];
+    values.forEach(function (v) { opts.push({ v: v, label: labelFn(v) }); });
+    opts.forEach(function (o) {
+      var btn = el("button", { cls: "pick-btn" + (sel[key] === o.v ? " sel" : ""), text: o.label });
+      btn.addEventListener("click", function () { sel[key] = o.v; refreshPicker(); });
+      container.appendChild(btn);
+    });
+  }
+
+  function refreshPicker() {
+    makeRow(elPickTopic, "topic", topicVals, function (t) { return t; });
+    makeRow(elPickDiff, "difficulty", diffVals, function (d) { return DIFF_LABEL[d] || d; });
+    var n = matching().length;
+    elPickCount.textContent = n + "문제";
+    elStartBtn.disabled = n === 0;
+  }
+
+  function filterLabel() {
+    var t = sel.topic === "__all__" ? "전체" : sel.topic;
+    var d = sel.difficulty === "__all__" ? "전체" : DIFF_LABEL[sel.difficulty];
+    return t + " · " + d + " ▾";
+  }
+
+  function showStart() {
+    elQuiz.hidden = true;
+    elHdr.hidden = true;
+    elFeedback.hidden = true;
+    elStart.hidden = false;
+    refreshPicker();
+  }
+
+  function startQuiz() {
+    POOL = matching();
+    if (!POOL.length) return;
+    deck = [];
+    elStart.hidden = true;
+    elQuiz.hidden = false;
+    elHdr.hidden = false;
+    elDeckChange.textContent = filterLabel();
+    render(nextQuestion());
+  }
+
+  elStartBtn.addEventListener("click", startQuiz);
+  elDeckChange.addEventListener("click", showStart);
+
+  // 주제가 하나뿐이면 '전체'와 중복이라 주제 선택 줄은 숨긴다.
+  if (topicVals.length <= 1) elTopicGroup.hidden = true;
+
+  showStart();
 })();
 </script>
 </body>

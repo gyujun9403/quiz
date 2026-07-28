@@ -18,6 +18,7 @@ ALLOWED_TAGS = {
     "response-code", "method", "header", "message-flow",
     "avp", "command-code", "result-code", "transport", "concept",
 }
+ALLOWED_DIFFICULTY = {"basic", "advanced"}
 VALID_TYPES = {"mcq", "ox", "short", "order"}
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
 
@@ -80,6 +81,13 @@ def validate(questions):
                     f"[{loc}] id 접두어 '{m.group(1)}'가 topic '{topic}'과 불일치 "
                     f"(기대: {expected_prefix}-)"
                 )
+
+        difficulty = q.get("difficulty")
+        if difficulty not in ALLOWED_DIFFICULTY:
+            errors.append(
+                f"[{loc}] difficulty 허용되지 않음: {difficulty!r} "
+                f"(허용: {sorted(ALLOWED_DIFFICULTY)}, 필수)"
+            )
 
         tags = q.get("tags")
         if not tags or not isinstance(tags, list):

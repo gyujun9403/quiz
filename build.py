@@ -304,6 +304,10 @@ TEMPLATE = r"""<!doctype html>
       <div class="picker-label">난이도</div>
       <div id="pick-diff" class="picker-row"></div>
     </div>
+    <div id="mode-group" class="picker-group">
+      <div class="picker-label">유형</div>
+      <div id="pick-mode" class="picker-row"></div>
+    </div>
     <div id="pick-count" class="pick-count"></div>
     <button id="start-btn" class="primary">시작</button>
   </div>
@@ -338,15 +342,18 @@ TEMPLATE = r"""<!doctype html>
   var current = null;
   var answered = false;
   var DIFF_LABEL = { basic: "기본", advanced: "심화" };
-  var sel = { topic: "__all__", difficulty: "__all__" };
+  var MODE_LABEL = { "__all__": "전체", order: "순서맞추기", noorder: "순서제외" };
+  var sel = { topic: "__all__", difficulty: "__all__", mode: "__all__" };
 
   var elHdr = document.getElementById("hdr");
   var elDeckChange = document.getElementById("deck-change");
   var elStart = document.getElementById("start");
   var elQuiz = document.getElementById("quiz");
   var elTopicGroup = document.getElementById("topic-group");
+  var elModeGroup = document.getElementById("mode-group");
   var elPickTopic = document.getElementById("pick-topic");
   var elPickDiff = document.getElementById("pick-diff");
+  var elPickMode = document.getElementById("pick-mode");
   var elPickCount = document.getElementById("pick-count");
   var elStartBtn = document.getElementById("start-btn");
   var elDeckCount = document.getElementById("deck-label");
@@ -660,8 +667,12 @@ TEMPLATE = r"""<!doctype html>
 
   function matching() {
     return DATA.filter(function (q) {
+      var modeOk = sel.mode === "__all__" ||
+                   (sel.mode === "order" && q.type === "order") ||
+                   (sel.mode === "noorder" && q.type !== "order");
       return (sel.topic === "__all__" || q.topic === sel.topic) &&
-             (sel.difficulty === "__all__" || q.difficulty === sel.difficulty);
+             (sel.difficulty === "__all__" || q.difficulty === sel.difficulty) &&
+             modeOk;
     });
   }
 
@@ -676,18 +687,30 @@ TEMPLATE = r"""<!doctype html>
     });
   }
 
+  // 유형(순서맞추기)은 type 필드값 하나에 대응하지 않고 "order냐 아니냐"라 makeRow로 못 만든다.
+  function makeModeRow() {
+    elPickMode.innerHTML = "";
+    ["__all__", "order", "noorder"].forEach(function (v) {
+      var btn = el("button", { cls: "pick-btn" + (sel.mode === v ? " sel" : ""), text: MODE_LABEL[v] });
+      btn.addEventListener("click", function () { sel.mode = v; refreshPicker(); });
+      elPickMode.appendChild(btn);
+    });
+  }
+
   function refreshPicker() {
     makeRow(elPickTopic, "topic", topicVals, function (t) { return t; });
     makeRow(elPickDiff, "difficulty", diffVals, function (d) { return DIFF_LABEL[d] || d; });
+    makeModeRow();
     var n = matching().length;
     elPickCount.textContent = n + "문제";
     elStartBtn.disabled = n === 0;
   }
 
   function filterLabel() {
-    var t = sel.topic === "__all__" ? "전체" : sel.topic;
-    var d = sel.difficulty === "__all__" ? "전체" : DIFF_LABEL[sel.difficulty];
-    return t + " · " + d + " ▾";
+    var parts = [sel.topic === "__all__" ? "전체" : sel.topic];
+    parts.push(sel.difficulty === "__all__" ? "전체" : DIFF_LABEL[sel.difficulty]);
+    if (sel.mode !== "__all__") parts.push(MODE_LABEL[sel.mode]);
+    return parts.join(" · ") + " ▾";
   }
 
   function showStart() {
@@ -714,6 +737,8 @@ TEMPLATE = r"""<!doctype html>
 
   // 주제가 하나뿐이면 '전체'와 중복이라 주제 선택 줄은 숨긴다.
   if (topicVals.length <= 1) elTopicGroup.hidden = true;
+  // order 타입 문제가 없으면 유형 필터도 의미 없으니 숨긴다.
+  if (!DATA.some(function (q) { return q.type === "order"; })) elModeGroup.hidden = true;
 
   showStart();
 })();

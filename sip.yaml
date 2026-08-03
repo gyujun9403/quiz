@@ -616,3 +616,65 @@
     성공할 수 있다. 403은 "이해했지만 거부"이며 인증으로 해결되지 않으니
     같은 요청을 반복하면 안 된다.
   ref: "RFC 3261 §21.4.2, §21.4.4"
+
+- id: sip-0043
+  type: order
+  topic: SIP
+  difficulty: basic
+  tags: [message-flow, method]
+  question: "이미 등록된 단말이 모든 위치 등록을 해제(로그아웃)하는 흐름을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "REGISTER (Expires: 0, Contact: *)", from: "단말", to: "등록서버"}
+    - {msg: "200 OK", from: "등록서버", to: "단말"}
+  explain: |
+    등록 해제는 새 REGISTER를 만료값 0으로 보내 기존 바인딩을 지우는 것이다.
+    Contact를 "*"로 주고 Expires를 0으로 하면 그 AOR의 모든 등록이 제거된다.
+    서버는 200 OK로 확인한다. 등록(sip-0027)과 정반대 동작이다.
+  ref: "RFC 3665 §2.4; RFC 3261 §10.2.2"
+
+- id: sip-0044
+  type: order
+  topic: SIP
+  difficulty: basic
+  tags: [message-flow, method]
+  question: "통화 중이던 발신자가 전화를 끊어 세션을 종료하는 흐름을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "BYE", from: "발신자", to: "착신자"}
+    - {msg: "200 OK", from: "착신자", to: "발신자"}
+  explain: |
+    확립된 세션의 종료는 BYE로 한다. 끊는 쪽(여기선 발신자)이 BYE를 보내고
+    상대가 200 OK로 확인하면 세션이 끝난다. 어느 쪽이든 먼저 BYE를 보낼 수
+    있으며, 방향은 "끊는 쪽 → 상대"다.
+  ref: "RFC 3261 §15.1"
+
+- id: sip-0045
+  type: order
+  topic: SIP
+  difficulty: basic
+  tags: [message-flow, response-code]
+  question: "발신자가 전화를 걸었으나 착신자가 통화 중이라 연결되지 못하는 흐름을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "INVITE", from: "발신자", to: "착신자"}
+    - {msg: "486 Busy Here", from: "착신자", to: "발신자"}
+    - {msg: "ACK", from: "발신자", to: "착신자"}
+  explain: |
+    착신 단말이 통화 중이면 486 Busy Here로 거절한다. 발신자는 이 최종 응답을
+    받고 ACK로 확인한다 — ACK는 2xx뿐 아니라 486 같은 실패(비-2xx) 최종
+    응답도 확인한다는 점이 핵심이다.
+  ref: "RFC 3261 §17.1.1.3, §21.4.24"
+
+- id: sip-0046
+  type: order
+  topic: SIP
+  difficulty: basic
+  tags: [message-flow, response-code]
+  question: "발신자가 전화를 걸었으나 착신자가 지금 응대할 수 없어(부재/방해금지 등) 연결되지 못하는 흐름을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "INVITE", from: "발신자", to: "착신자"}
+    - {msg: "480 Temporarily Unavailable", from: "착신자", to: "발신자"}
+    - {msg: "ACK", from: "발신자", to: "착신자"}
+  explain: |
+    착신자가 로그아웃·방해금지 등으로 지금 응대할 수 없으면 480 Temporarily
+    Unavailable로 응답한다. 발신자는 이 최종 응답도 ACK로 확인한다. 486(통화중,
+    sip-0045)과 원인이 다르다 — 480은 "응대 불가 상태 전반"이다.
+  ref: "RFC 3261 §17.1.1.3, §21.4.18"

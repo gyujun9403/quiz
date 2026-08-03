@@ -6,7 +6,8 @@
       "Bash(python3 build.py)",
       "Bash(command -v node)",
       "Bash(python3 -)",
-      "Bash(node --check /tmp/claude-1000/-home-gjyeon-quiz/36df13ec-ce76-460d-b225-d3f25cbf016f/scratchpad/logic.js)"
+      "Bash(node --check /tmp/claude-1000/-home-gjyeon-quiz/36df13ec-ce76-460d-b225-d3f25cbf016f/scratchpad/logic.js)",
+      "WebFetch(domain:www.rfc-editor.org)"
     ]
   }
 }

@@ -378,3 +378,241 @@
     실패가 아니라 사용자의 새 위치나 대체 서비스 정보를 알려주는
     응답이다.
   ref: "RFC 3261 §21.3, §21.4"
+
+- id: sip-0027
+  type: order
+  topic: SIP
+  difficulty: basic
+  tags: [message-flow, method]
+  question: "단말이 등록 서버에 처음 등록할 때, 인증 챌린지를 포함한 흐름을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "REGISTER", from: "단말", to: "등록서버"}
+    - {msg: "401 Unauthorized", from: "등록서버", to: "단말"}
+    - {msg: "REGISTER (인증정보 포함)", from: "단말", to: "등록서버"}
+    - {msg: "200 OK", from: "등록서버", to: "단말"}
+  explain: |
+    단말이 처음 REGISTER를 보내면 등록 서버(registrar)는 인증을 요구하며
+    401 Unauthorized로 챌린지한다. 단말은 자격증명(Digest)을 담아 REGISTER를
+    다시 보내고, 서버가 이를 확인하면 200 OK로 등록이 완료된다. 401은
+    등록 서버/UAS가 보내는 인증 요구이며, 프록시는 407을 쓴다(sip-0012).
+  ref: "RFC 3665 §2.1; RFC 3261 §10, §21.4.2"
+
+- id: sip-0028
+  type: short
+  topic: SIP
+  difficulty: basic
+  tags: [method]
+  question: "단말이 자신의 현재 접속 위치를 등록 서버에 등록(위치 바인딩)할 때 쓰는 메서드는?"
+  answer: ["REGISTER"]
+  explain: |
+    REGISTER는 사용자의 공개 주소(AOR, Address-of-Record)를 단말의 현재
+    Contact 주소에 바인딩해, 이후 그 사용자에게 오는 요청이 현재 단말로
+    라우팅되게 한다. 위치 등록이 SIP 이동성의 출발점이다.
+  ref: "RFC 3261 §10.1"
+
+- id: sip-0029
+  type: ox
+  topic: SIP
+  difficulty: basic
+  tags: [method]
+  question: "REGISTER는 사용자의 공개 주소(AOR)를 현재 접속 위치(Contact)에 바인딩해 등록
+    서버가 그 사용자의 위치를 알게 하는 메서드다."
+  answer: true
+  explain: |
+    맞다. REGISTER의 목적은 AOR↔Contact 바인딩이다. 이 바인딩 덕분에 누군가
+    그 AOR로 INVITE를 보내면 등록 서버/프록시가 현재 단말 위치로 요청을
+    넘길 수 있다.
+  ref: "RFC 3261 §10.1"
+
+- id: sip-0030
+  type: order
+  topic: SIP
+  difficulty: basic
+  tags: [message-flow]
+  question: "착신자가 통화를 끊는 경우까지 포함한 기본 호의 전체 흐름(설정→종료)을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "INVITE", from: "발신자", to: "착신자"}
+    - {msg: "100 Trying", from: "착신자", to: "발신자"}
+    - {msg: "180 Ringing", from: "착신자", to: "발신자"}
+    - {msg: "200 OK", from: "착신자", to: "발신자"}
+    - {msg: "ACK", from: "발신자", to: "착신자"}
+    - {msg: "BYE", from: "착신자", to: "발신자"}
+    - {msg: "200 OK (BYE 응답)", from: "발신자", to: "착신자"}
+  explain: |
+    설정 절반은 sip-0002와 같다(INVITE→100→180→200→ACK). 통화가 끝나면
+    확립된 세션을 종료하려고 한쪽이 BYE를 보내고, 상대는 200 OK로 응답한다.
+    여기서는 착신자가 먼저 끊었으므로 BYE는 착신자→발신자, 그 200 OK는
+    발신자→착신자다. 세션 종료는 CANCEL이 아니라 BYE로 한다.
+  ref: "RFC 3261 §4 (Figure 1), §15.1"
+
+- id: sip-0031
+  type: mcq
+  topic: SIP
+  difficulty: basic
+  tags: [method, message-flow]
+  question: "INVITE에 대한 200 OK(2xx 최종 응답)를 받은 발신자가 3-way 핸드셰이크를 완성하려고
+    마지막으로 보내는 메시지는?"
+  choices: ["ACK", "BYE", "200 OK", "CANCEL"]
+  answer: 0
+  explain: |
+    INVITE의 3-way 핸드셰이크는 INVITE → 200 OK → ACK로 완성된다. 발신자는
+    2xx를 받을 때마다 이를 확인하는 ACK를 보내야 세션이 확립된다. BYE는 이미
+    확립된 세션의 종료, CANCEL은 최종 응답 전 취소용이라 여기선 아니다.
+  ref: "RFC 3261 §13.2.2.4"
+
+- id: sip-0032
+  type: ox
+  topic: SIP
+  difficulty: basic
+  tags: [method]
+  question: "아직 응답이 오지 않아 확립되지 않은(진행 중인 INVITE) 통화를 중단할 때는 BYE를 보낸다."
+  answer: false
+  explain: |
+    아니다. BYE는 이미 확립된 세션(다이얼로그)을 종료하는 메서드다. 아직
+    최종 응답을 받기 전 진행 중인 INVITE를 멈추려면 CANCEL을 쓴다. 확립
+    전=CANCEL, 확립 후=BYE로 구분한다.
+  ref: "RFC 3261 §15.1, §9.1"
+
+- id: sip-0033
+  type: mcq
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "착신 단말이 INVITE를 받아 사용자에게 착신을 알리는(전화가 울리는) 중임을 나타내는 응답은?"
+  choices: ["180 Ringing", "100 Trying", "183 Session Progress", "200 OK"]
+  answer: 0
+  explain: |
+    180 Ringing은 착신 UA가 사용자에게 알림(벨)을 울리는 중이라는 잠정
+    응답이다. 100 Trying은 요청을 받아 처리 중이라는 뜻일 뿐 아직 벨은
+    울리지 않았고, 200 OK는 착신자가 실제로 응답(수락)했을 때다.
+  ref: "RFC 3261 §21.1.2"
+
+- id: sip-0034
+  type: ox
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "180 Ringing 응답을 받았다면 착신자가 전화를 받아 통화가 연결된 것이다."
+  answer: false
+  explain: |
+    아니다. 180은 상대 단말이 "울리는 중"이라는 잠정 응답일 뿐, 아직 받지
+    않았다. 착신자가 실제로 받아 통화가 연결되면 200 OK가 온다. 이 구분이
+    콜 상태 파악의 기본이다.
+  ref: "RFC 3261 §21.1.2, §21.2.1"
+
+- id: sip-0035
+  type: mcq
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "100 Trying 응답의 의미로 가장 정확한 것은?"
+  choices:
+    - "요청을 받아 처리 중이다(아직 최종 응답 아님)"
+    - "착신 단말이 사용자에게 착신을 알리는 중이다"
+    - "착신자가 통화를 수락했다"
+    - "요청한 사용자를 찾을 수 없다"
+  answer: 0
+  explain: |
+    100 Trying은 다음 홉이 요청을 받아 처리 중이라는 잠정 응답이다. 벨이
+    울리는 것은 180, 수락은 200 OK, 사용자 없음은 404다 — 100은 그 어느
+    것도 아니고 "받아서 처리 시작"만 뜻한다.
+  ref: "RFC 3261 §21.1.1"
+
+- id: sip-0036
+  type: ox
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "100 Trying은 요청을 받아 처리 중임을 알리는 잠정(1xx) 응답이며, 최종 응답이 아니다."
+  answer: true
+  explain: |
+    맞다. 100 Trying은 잠정 응답으로 "요청을 받아 처리 중"이라는 뜻이다.
+    최종 응답(2xx~6xx)이 아니므로 이것만으로 통화가 성사·실패한 것은 아니다.
+    최종 결과는 180 뒤의 200 OK나 4xx~6xx로 온다.
+  ref: "RFC 3261 §21.1.1"
+
+- id: sip-0037
+  type: mcq
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "183 Session Progress가 쓰이는 대표적 상황은?"
+  choices:
+    - "최종 응답 전에 통화 진행 정보(예: 초기 미디어/네트워크 링백)를 전달할 때"
+    - "요청 문법 오류를 알릴 때"
+    - "착신자가 통화를 수락했을 때"
+    - "서버가 사용자를 찾지 못했을 때"
+  answer: 0
+  explain: |
+    183은 최종 응답 전에 "통화 진행 상황"을 전달하는 잠정 응답으로, 흔히
+    초기 미디어(통신사 안내음·네트워크 링백)를 흘려보낼 때 쓴다. 달리
+    분류되지 않는 진행 정보를 전달하는 용도라는 점이 180과의 차이다.
+  ref: "RFC 3261 §21.1.5"
+
+- id: sip-0038
+  type: short
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "요청이 성공했음을 나타내는 SIP 2xx 최종 응답 코드의 번호(3자리)는?"
+  answer: ["200"]
+  explain: |
+    200 OK는 요청이 성공했음을 뜻하는 대표 최종 응답이다. INVITE에 대한
+    200 OK는 착신자가 통화를 수락했다는 의미이며, 발신자는 이를 ACK로
+    확인해 세션을 확립한다.
+  ref: "RFC 3261 §21.2.1"
+
+- id: sip-0039
+  type: mcq
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "서버가 Request-URI의 도메인에 해당 사용자가 존재하지 않는다는 확정 정보를 가졌을 때 보내는 응답은?"
+  choices: ["404 Not Found", "403 Forbidden", "480 Temporarily Unavailable", "400 Bad Request"]
+  answer: 0
+  explain: |
+    404 Not Found는 "그 도메인에 그 사용자가 없다"는 확정적 정보를 뜻한다.
+    480은 사용자는 있으나 지금 응대 불가, 403은 이해했지만 거부, 400은 요청
+    문법 오류다 — 원인이 서로 달라 혼동하면 안 된다.
+  ref: "RFC 3261 §21.4.5"
+
+- id: sip-0040
+  type: ox
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "404 Not Found는 요청 메시지의 문법 자체가 잘못됐다는 뜻이다."
+  answer: false
+  explain: |
+    아니다. 문법 오류는 400 Bad Request다. 404는 문법은 정상이지만 그
+    도메인에 해당 사용자가 존재하지 않는다는 뜻이다. 둘은 원인이 완전히
+    다르다.
+  ref: "RFC 3261 §21.4.5"
+
+- id: sip-0041
+  type: mcq
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "서버가 요청을 이해했지만 수행을 거부하며, 인증을 다시 시도해도 소용없어 재시도하면 안 되는 응답은?"
+  choices: ["403 Forbidden", "401 Unauthorized", "407 Proxy Authentication Required", "404 Not Found"]
+  answer: 0
+  explain: |
+    403 Forbidden은 서버가 요청을 이해했으나 거부하며, 인증(자격증명)으로도
+    해결되지 않으니 재시도하지 말라는 뜻이다. 반면 401/407은 자격증명을
+    갖춰 다시 보내면 통과할 수 있는 "인증 요구"라는 점이 결정적 차이다.
+  ref: "RFC 3261 §21.4.4"
+
+- id: sip-0042
+  type: ox
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "401 Unauthorized는 자격증명을 갖춰 다시 시도하면 통과할 수 있지만, 403 Forbidden은
+    인증을 다시 시도해도 거부된다."
+  answer: true
+  explain: |
+    맞다. 401은 "인증이 필요하다"는 요구라 올바른 자격증명으로 재시도하면
+    성공할 수 있다. 403은 "이해했지만 거부"이며 인증으로 해결되지 않으니
+    같은 요청을 반복하면 안 된다.
+  ref: "RFC 3261 §21.4.2, §21.4.4"

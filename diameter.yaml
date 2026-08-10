@@ -1,0 +1,379 @@
+# IMS 코어 Diameter 인터페이스 (Cx/Sh/Rx). SIP 서버 개발자 관점의 절차 암기용.
+# 흐름(order)은 인터페이스 단위로 2~3 actor만 사용(폰 렌더링 고려).
+# 커맨드코드/Result코드는 3GPP TS 29.230, 커맨드 정의는 TS 29.229(Cx)/29.328·329(Sh)/29.214(Rx),
+# 기본 커맨드코드는 RFC 6733에 대조 검증함.
+
+# ---------------- Cx: S-CSCF/I-CSCF <-> HSS ----------------
+
+- id: diam-0001
+  type: order
+  topic: Diameter
+  difficulty: basic
+  tags: [message-flow, command-code]
+  question: "IMS 초기 등록 시 Cx 인터페이스에서 오가는 Diameter 커맨드를 순서·방향까지 맞춰라
+    (I-CSCF·S-CSCF·HSS)."
+  items:
+    - {msg: "UAR", from: "I-CSCF", to: "HSS"}
+    - {msg: "UAA", from: "HSS", to: "I-CSCF"}
+    - {msg: "MAR", from: "S-CSCF", to: "HSS"}
+    - {msg: "MAA", from: "HSS", to: "S-CSCF"}
+    - {msg: "SAR", from: "S-CSCF", to: "HSS"}
+    - {msg: "SAA", from: "HSS", to: "S-CSCF"}
+  explain: |
+    등록 시 Cx는 세 단계다. (1) I-CSCF가 UAR로 사용자 등록을 인가받고 UAA로 S-CSCF
+    이름/능력을 받아 S-CSCF를 고른다. (2) 선택된 S-CSCF가 MAR로 인증 벡터를 요청하고
+    MAA로 받는다(→ UE에 401 챌린지). (3) UE가 자격증명으로 재등록하면 S-CSCF가 SAR로
+    자신을 사용자에 할당하고 SAA로 사용자 프로필을 내려받는다. 즉 UAR→MAR→SAR 순.
+  ref: "3GPP TS 29.228; TS 29.229 §6.1"
+
+- id: diam-0002
+  type: order
+  topic: Diameter
+  difficulty: basic
+  tags: [message-flow, command-code]
+  question: "착신 호 처리 중 I-CSCF가 사용자를 서빙하는 S-CSCF를 찾기 위한 Cx 교환을
+    순서·방향까지 맞춰라."
+  items:
+    - {msg: "LIR", from: "I-CSCF", to: "HSS"}
+    - {msg: "LIA", from: "HSS", to: "I-CSCF"}
+  explain: |
+    착신 INVITE를 받은 I-CSCF는 그 사용자를 현재 담당하는 S-CSCF 이름을 모른다. LIR
+    (Location-Info-Request)로 HSS에 물으면 HSS가 LIA로 서빙 S-CSCF 이름을 돌려주고,
+    I-CSCF는 그 S-CSCF로 INVITE를 라우팅한다. 등록(UAR)과 달리 착신 경로 탐색용이다.
+  ref: "3GPP TS 29.228; TS 29.229 §6.1.3"
+
+- id: diam-0003
+  type: mcq
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, concept]
+  question: "Cx에서 I-CSCF가 사용자의 등록을 인가받고 배정할 S-CSCF 정보를 얻기 위해 HSS로
+    보내는 커맨드는?"
+  choices: ["UAR (User-Authorization-Request)", "MAR (Multimedia-Auth-Request)", "SAR (Server-Assignment-Request)", "LIR (Location-Info-Request)"]
+  answer: 0
+  explain: |
+    UAR는 등록 인가 요청이다. HSS는 UAA로 로밍 허용 여부와 S-CSCF 능력/이름을 돌려줘
+    I-CSCF가 S-CSCF를 고르게 한다. 인증 벡터(MAR)나 서버 할당(SAR)은 이후 S-CSCF가
+    수행한다.
+  ref: "3GPP TS 29.229 §6.1.1"
+
+- id: diam-0004
+  type: mcq
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, concept]
+  question: "S-CSCF가 사용자를 인증하기 위한 인증 벡터(authentication vector)를 HSS에서
+    받아오는 Cx 커맨드는?"
+  choices: ["MAR (Multimedia-Auth-Request)", "UAR (User-Authorization-Request)", "SAR (Server-Assignment-Request)", "LIR (Location-Info-Request)"]
+  answer: 0
+  explain: |
+    MAR는 인증 벡터 요청이다. HSS는 MAA로 인증 벡터를 내려주고, S-CSCF는 이를 근거로
+    UE에 401 인증 챌린지를 보낸다. UAR(인가)·SAR(할당)와 목적이 다르다.
+  ref: "3GPP TS 29.229 §6.3"
+
+- id: diam-0005
+  type: mcq
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, concept]
+  question: "인증에 성공한 뒤 S-CSCF가 자신을 사용자에 할당하고 사용자 프로필을 내려받기
+    위해 HSS로 보내는 Cx 커맨드는?"
+  choices: ["SAR (Server-Assignment-Request)", "UAR (User-Authorization-Request)", "MAR (Multimedia-Auth-Request)", "LIR (Location-Info-Request)"]
+  answer: 0
+  explain: |
+    SAR는 서버 할당 요청으로, HSS에 "이 사용자는 내가 담당한다"고 등록하고 SAA로
+    사용자 프로필(서비스 프로파일)을 받는다. 등록 흐름의 마지막 Cx 단계다.
+  ref: "3GPP TS 29.229 §6.2"
+
+- id: diam-0006
+  type: mcq
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, concept]
+  question: "LIR (Location-Info-Request)의 주 용도는?"
+  choices:
+    - "착신 시 사용자를 현재 서빙하는 S-CSCF의 이름을 HSS에서 조회"
+    - "사용자 인증 벡터를 HSS에서 조회"
+    - "S-CSCF를 사용자에 할당하고 프로필을 조회"
+    - "AS가 HSS의 가입자 데이터를 조회"
+  answer: 0
+  explain: |
+    LIR는 착신(terminating) 처리에서 I-CSCF가 서빙 S-CSCF 이름을 얻는 데 쓴다. 인증
+    벡터는 MAR, 서버 할당은 SAR, 가입자 데이터 조회는 Sh의 UDR로 서로 인터페이스·목적이
+    다르다.
+  ref: "3GPP TS 29.229 §6.1.3"
+
+- id: diam-0007
+  type: short
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code]
+  question: "S-CSCF가 HSS에서 인증 벡터를 받기 위해 보내는 Cx 커맨드의 약어는? (3글자)"
+  answer: ["MAR"]
+  explain: |
+    MAR = Multimedia-Auth-Request. 인증 벡터 요청 커맨드다(응답은 MAA). Cx 커맨드
+    코드는 303.
+  ref: "3GPP TS 29.229 §6.3; TS 29.230 §5.1"
+
+- id: diam-0008
+  type: short
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code]
+  question: "착신 호에서 I-CSCF가 서빙 S-CSCF를 찾기 위해 HSS로 보내는 Cx 커맨드의 약어는?
+    (3글자)"
+  answer: ["LIR"]
+  explain: |
+    LIR = Location-Info-Request(응답 LIA). 착신 경로에서 서빙 S-CSCF 이름을 조회한다.
+    Cx 커맨드 코드는 302.
+  ref: "3GPP TS 29.229 §6.1.3; TS 29.230 §5.1"
+
+- id: diam-0009
+  type: ox
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, message-flow]
+  question: "MAR(Multimedia-Auth-Request)는 I-CSCF가 HSS로 보내는 커맨드다."
+  answer: false
+  explain: |
+    아니다. MAR를 보내는 것은 S-CSCF다(인증 벡터 요청). I-CSCF가 HSS로 보내는 Cx
+    커맨드는 UAR(인가)와 LIR(착신 시 서빙 S-CSCF 조회)다. 인터페이스는 같아도 노드
+    역할이 다르다.
+  ref: "3GPP TS 29.229 §6.3"
+
+- id: diam-0010
+  type: ox
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, message-flow]
+  question: "LIR는 착신 호 처리 중 I-CSCF가 사용자를 서빙하는 S-CSCF 이름을 HSS에 조회할
+    때 사용한다."
+  answer: true
+  explain: |
+    맞다. 착신 INVITE를 받은 I-CSCF는 서빙 S-CSCF를 모르므로 LIR로 HSS에 물어 LIA로
+    이름을 받아 라우팅한다. 발신 등록의 UAR와 구분되는 착신 전용 조회다.
+  ref: "3GPP TS 29.229 §6.1.3"
+
+- id: diam-0011
+  type: mcq
+  topic: Diameter
+  difficulty: advanced
+  tags: [result-code]
+  question: "HSS가 요청된 사용자 식별자가 존재하지 않을 때 반환하는 Experimental-Result-Code는?"
+  choices:
+    - "5001 DIAMETER_ERROR_USER_UNKNOWN"
+    - "5003 DIAMETER_ERROR_IDENTITY_NOT_REGISTERED"
+    - "5005 DIAMETER_ERROR_IDENTITY_ALREADY_REGISTERED"
+    - "5002 DIAMETER_ERROR_IDENTITIES_DONT_MATCH"
+  answer: 0
+  explain: |
+    5001은 "그 사용자 자체가 HSS에 없음"이다. 5003은 사용자는 있으나 등록 상태가
+    아님, 5005는 이미 등록됨, 5002는 공개/개인 식별자 불일치 — 모두 5xxx(영구 실패)
+    대역이지만 원인이 다르다.
+  ref: "3GPP TS 29.229 §6.2; TS 29.230 §8.1.4"
+
+- id: diam-0012
+  type: mcq
+  topic: Diameter
+  difficulty: advanced
+  tags: [result-code]
+  question: "이미 등록된 식별자로 등록이 들어와 충돌할 때 HSS가 쓸 수 있는 Experimental-Result-Code는?"
+  choices:
+    - "5005 DIAMETER_ERROR_IDENTITY_ALREADY_REGISTERED"
+    - "5001 DIAMETER_ERROR_USER_UNKNOWN"
+    - "5004 DIAMETER_ERROR_ROAMING_NOT_ALLOWED"
+    - "2001 DIAMETER_FIRST_REGISTRATION"
+  answer: 0
+  explain: |
+    5005는 "이미 등록된 식별자"다. 5001(사용자 없음)·5004(로밍 불가)와 원인이 다르고,
+    2001은 성공(첫 등록) 계열이라 애초에 실패가 아니다. 5xxx=영구 실패, 2xxx=성공.
+  ref: "3GPP TS 29.229; TS 29.230 §8.1"
+
+- id: diam-0013
+  type: ox
+  topic: Diameter
+  difficulty: advanced
+  tags: [result-code, concept]
+  question: "Cx의 5xxx 대역 Experimental-Result-Code는 영구 실패(permanent failure)를
+    나타낸다."
+  answer: true
+  explain: |
+    맞다. 3GPP Experimental-Result-Code도 Diameter 대역 규칙을 따른다: 2xxx=성공,
+    5xxx=영구 실패. 예: 5001 USER_UNKNOWN. 이 대역 구조를 알면 개별 코드도 앵커링해
+    외우기 쉽다.
+  ref: "3GPP TS 29.230 §8.1"
+
+- id: diam-0014
+  type: ox
+  topic: Diameter
+  difficulty: advanced
+  tags: [result-code, concept]
+  question: "DIAMETER_FIRST_REGISTRATION(2001)은 등록 실패를 나타내는 코드다."
+  answer: false
+  explain: |
+    아니다. 2001은 2xxx(성공) 대역으로 "첫 등록 성공"을 뜻한다. 실패는 5xxx 대역이다
+    (예: 5001 USER_UNKNOWN). 2xxx=성공/5xxx=영구실패 대역 구분이 핵심.
+  ref: "3GPP TS 29.230 §8.1.2"
+
+- id: diam-0015
+  type: short
+  topic: Diameter
+  difficulty: advanced
+  tags: [command-code]
+  question: "Cx의 User-Authorization 커맨드(UAR/UAA)에 할당된 Diameter 커맨드 코드 번호는?"
+  answer: ["300"]
+  explain: |
+    3GPP TS 29.230은 Cx/Dx 커맨드 코드를 300부터 부여한다: 300 UAR/UAA, 301 SAR/SAA,
+    302 LIR/LIA, 303 MAR/MAA. 요청/응답은 같은 코드를 쓰고 R-bit로 구분한다.
+  ref: "3GPP TS 29.230 §5.1"
+
+- id: diam-0016
+  type: mcq
+  topic: Diameter
+  difficulty: advanced
+  tags: [command-code]
+  question: "Diameter 커맨드 코드 303에 해당하는 Cx 커맨드 쌍은?"
+  choices:
+    - "MAR/MAA (Multimedia-Auth)"
+    - "UAR/UAA (User-Authorization)"
+    - "SAR/SAA (Server-Assignment)"
+    - "LIR/LIA (Location-Info)"
+  answer: 0
+  explain: |
+    300 UAR/UAA, 301 SAR/SAA, 302 LIR/LIA, 303 MAR/MAA 순으로 부여됐다. 303은
+    Multimedia-Auth 쌍이다. 코드가 연속 부여됐다는 구조로 외우면 헷갈리지 않는다.
+  ref: "3GPP TS 29.230 §5.1"
+
+# ---------------- Sh: AS <-> HSS ----------------
+
+- id: diam-0017
+  type: order
+  topic: Diameter
+  difficulty: basic
+  tags: [message-flow, command-code]
+  question: "애플리케이션 서버(AS)가 Sh 인터페이스로 HSS의 가입자 데이터를 조회하는 교환을
+    순서·방향까지 맞춰라."
+  items:
+    - {msg: "UDR", from: "AS", to: "HSS"}
+    - {msg: "UDA", from: "HSS", to: "AS"}
+  explain: |
+    Sh에서 AS는 UDR(User-Data-Request)로 HSS의 가입자 데이터를 조회하고 HSS는 UDA로
+    데이터를 돌려준다. Sh는 AS↔HSS 간 데이터 접근/구독 인터페이스로, Cx(등록/인증)와는
+    쓰임이 다르다.
+  ref: "3GPP TS 29.328; TS 29.329"
+
+- id: diam-0018
+  type: order
+  topic: Diameter
+  difficulty: advanced
+  tags: [message-flow, command-code]
+  question: "AS가 Sh로 가입자 데이터 변경 통지를 구독하고, 이후 데이터가 바뀌어 HSS가
+    통지하는 흐름을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "SNR", from: "AS", to: "HSS"}
+    - {msg: "SNA", from: "HSS", to: "AS"}
+    - {msg: "PNR", from: "HSS", to: "AS"}
+    - {msg: "PNA", from: "AS", to: "HSS"}
+  explain: |
+    AS가 SNR(Subscribe-Notifications-Request)로 특정 데이터 변경 통지를 구독하면 HSS가
+    SNA로 확인한다. 이후 데이터가 바뀌면 HSS가 먼저 PNR(Push-Notification-Request)로
+    통지하고 AS가 PNA로 응답한다. PNR만 HSS가 발신한다는 점이 방향 포인트다.
+  ref: "3GPP TS 29.328; TS 29.329; TS 29.230 §5.1"
+
+- id: diam-0019
+  type: mcq
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, concept]
+  question: "Sh 인터페이스에서 AS가 HSS의 가입자 데이터를 읽어오기 위해 쓰는 커맨드는?"
+  choices:
+    - "UDR (User-Data-Request)"
+    - "SAR (Server-Assignment-Request)"
+    - "MAR (Multimedia-Auth-Request)"
+    - "AAR (AA-Request)"
+  answer: 0
+  explain: |
+    UDR는 Sh의 데이터 조회 커맨드다(응답 UDA). SAR·MAR는 Cx(S-CSCF↔HSS), AAR는
+    Rx(P-CSCF↔PCRF)로 인터페이스가 다르다. 커맨드를 인터페이스에 묶어 외우는 게 요령.
+  ref: "3GPP TS 29.328"
+
+- id: diam-0020
+  type: ox
+  topic: Diameter
+  difficulty: advanced
+  tags: [command-code, message-flow]
+  question: "PNR(Push-Notification-Request)는 AS가 HSS로 데이터를 요청할 때 보내는 커맨드다."
+  answer: false
+  explain: |
+    아니다. PNR는 HSS가 AS로 데이터 변경을 "밀어주는"(push) 통지 커맨드라 방향이
+    HSS→AS다. AS가 데이터를 요청할 때는 UDR(조회)나 SNR(구독)를 쓴다.
+  ref: "3GPP TS 29.328; TS 29.329"
+
+# ---------------- Rx: P-CSCF(AF) <-> PCRF ----------------
+
+- id: diam-0021
+  type: order
+  topic: Diameter
+  difficulty: basic
+  tags: [message-flow, command-code]
+  question: "P-CSCF(AF)가 SIP 세션의 미디어를 Rx로 인가받고, 세션 종료 시 정책을 해제하는
+    흐름을 순서·방향까지 맞춰라."
+  items:
+    - {msg: "AAR", from: "P-CSCF", to: "PCRF"}
+    - {msg: "AAA", from: "PCRF", to: "P-CSCF"}
+    - {msg: "STR", from: "P-CSCF", to: "PCRF"}
+    - {msg: "STA", from: "PCRF", to: "P-CSCF"}
+  explain: |
+    세션 설정 시 P-CSCF(AF)는 AAR(AA-Request)로 미디어 정보를 PCRF에 주고 인가/QoS를
+    요청하며 AAA로 응답을 받는다. 통화가 끝나면 STR(Session-Termination-Request)로
+    세션을 종료하고 STA로 확인한다. Rx는 IMS 세션과 베어러 정책을 잇는 인터페이스다.
+  ref: "3GPP TS 29.214"
+
+- id: diam-0022
+  type: mcq
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, concept]
+  question: "Rx에서 P-CSCF(AF)가 세션의 미디어 정보를 PCRF에 전달하며 자원 인가를 요청하는
+    커맨드는?"
+  choices:
+    - "AAR (AA-Request)"
+    - "SAR (Server-Assignment-Request)"
+    - "UDR (User-Data-Request)"
+    - "LIR (Location-Info-Request)"
+  answer: 0
+  explain: |
+    AAR는 Rx의 세션/미디어 인가 요청 커맨드다(응답 AAA). SAR/LIR는 Cx, UDR는 Sh로
+    각각 인터페이스가 다르다. Rx는 SIP 세션 정보를 정책(PCRF)에 연결한다.
+  ref: "3GPP TS 29.214"
+
+- id: diam-0023
+  type: mcq
+  topic: Diameter
+  difficulty: advanced
+  tags: [command-code, message-flow]
+  question: "Rx에서 PCRF가 AF(P-CSCF)로 세션 중단을 지시할 때 쓰는 커맨드와 방향이 옳은 것은?"
+  choices:
+    - "ASR — PCRF → AF"
+    - "STR — AF → PCRF"
+    - "AAR — AF → PCRF"
+    - "RAR — AF → PCRF"
+  answer: 0
+  explain: |
+    ASR(Abort-Session-Request)는 PCRF가 AF로 세션 중단을 지시한다(PCRF→AF). STR는
+    반대로 AF가 종료를 알리는 것(AF→PCRF)이고, RAR도 PCRF→AF지만 재인가 요청이다.
+    ASR/STR/RAR는 Diameter 기본 커맨드(274/275/258)를 재사용한다.
+  ref: "3GPP TS 29.214; RFC 6733 §3.1"
+
+- id: diam-0024
+  type: ox
+  topic: Diameter
+  difficulty: basic
+  tags: [command-code, message-flow]
+  question: "Rx에서 STR(Session-Termination-Request)는 AF(P-CSCF)가 PCRF로 세션 종료를
+    알릴 때 보낸다."
+  answer: true
+  explain: |
+    맞다. 세션이 끝나면 AF(P-CSCF)가 STR로 PCRF에 종료를 알리고 STA로 확인받는다.
+    반대로 PCRF가 세션을 강제로 끊는 것은 ASR(PCRF→AF)다 — 방향이 반대다.
+  ref: "3GPP TS 29.214; RFC 6733 §8.4"

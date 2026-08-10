@@ -242,6 +242,12 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
   명시 흐름만: 등록 해제(REGISTER Expires:0→200, RFC 3665 §2.4), 세션 종료(BYE→200),
   통화중(INVITE→486→ACK), 부재중(INVITE→480→ACK, RFC 3261 §17.1.1.3 비-2xx도 ACK로
   확인). 현재 '기본·순서맞추기' 덱 7문제(sip-0002/0027/0030/0043/0044/0045/0046). 총 46문제.
+- [x] **Diameter IMS 코어(Cx/Sh/Rx) 착수** — `diameter.yaml` 신설(prefix `diam-`), 24문제
+  (basic 15 / advanced 9, order 5 / mcq 10 / ox 6[O:X 3:3] / short 3). SIP 서버 개발자
+  관점, 인터페이스 단위 2~3 actor 흐름. 다룬 것: Cx 등록 UAR/UAA→MAR/MAA→SAR/SAA(3-actor),
+  착신 LIR/LIA, 커맨드 역할·코드(300~303), Experimental-Result(2001~2004/5001~5005 대역),
+  Sh UDR·SNR/PNR, Rx AAR·STR/ASR. 전량 3GPP TS 29.228/229/230·29.328/329·29.214,
+  RFC 6733 대조 검증. 커맨드코드·Result코드는 TS 29.230 레지스트리로 확정. 총 70문제.
 
 ## 지금 열린 항목 (다음 작업)
 
@@ -254,7 +260,11 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
    있는지" 논의에서 잡은 전체 스코프(대략 60~80문제) 중 응답 코드 1차분만 끝난 상태.
    남은 카테고리: 헤더(Via/Route/Contact 등, ~10~15), 메시지흐름/다이얼로그 개념
    (인증 챌린지, re-INVITE 등, ~10~15), 인증(Digest, ~5~8), 전송(~3~5).
-3. Diameter 문제 착수 전 스키마 재확인 — actor가 3개 이상(HSS/EIR/OFCS 등)인 흐름은
-   `order` 다이어그램 렌더러가 구조적으로는 지원하지만 실제로 폰 화면에서 안 겹치는지
-   아직 검증 안 됨. 첫 다중 actor 문제 만들 때 확인.
-4. 폰에서 새로 추가된 26문제 다 훑어보며 오탈자/레이아웃 확인 (아직 안 함).
+3. **다중 actor(3+) 폰 렌더링 검증** — 첫 3-actor 문제 diam-0001(I-CSCF·HSS·S-CSCF,
+   6메시지)이 실제 폰 세로 화면에서 lifeline/화살표가 안 겹치는지 확인 필요. 겹치면
+   렌더러 조정(폭 배분·라벨 줄바꿈) 후 4-actor 흐름 확장 판단. 나머지 Diameter order는
+   전부 2-actor라 안전.
+4. **Diameter 계속 확장** — Cx/Sh/Rx 1차분 완료. 후보: Cx 등록 해제/재등록(SAR
+   Server-Assignment-Type), RTR/PPR(HSS 발신), Rx RAR(베어러 이벤트 통지), Sh PUR(데이터
+   갱신). EPC(S6a/S13: MME/HSS/EIR)는 사용자가 원하면 별도 track(3GPP TS 29.272 대조).
+5. 폰에서 새로 추가된 문제들 훑어보며 오탈자/레이아웃 확인 (아직 안 함).

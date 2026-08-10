@@ -19,6 +19,9 @@
     - {msg: "MAA", from: "HSS", to: "S-CSCF"}
     - {msg: "SAR", from: "S-CSCF", to: "HSS"}
     - {msg: "SAA", from: "HSS", to: "S-CSCF"}
+  decoys:
+    - {msg: "LIR", from: "I-CSCF", to: "HSS"}
+    - {msg: "LIA", from: "HSS", to: "I-CSCF"}
   explain: |
     등록 시 Cx는 세 단계다. (1) I-CSCF가 UAR로 사용자 등록을 인가받고 UAA로 S-CSCF
     이름/능력을 받아 S-CSCF를 고른다. (2) 선택된 S-CSCF가 MAR로 인증 벡터를 요청하고
@@ -36,6 +39,9 @@
   items:
     - {msg: "LIR", from: "I-CSCF", to: "HSS"}
     - {msg: "LIA", from: "HSS", to: "I-CSCF"}
+  decoys:
+    - {msg: "UAR", from: "I-CSCF", to: "HSS"}
+    - {msg: "UAA", from: "HSS", to: "I-CSCF"}
   explain: |
     착신 INVITE를 받은 I-CSCF는 그 사용자를 현재 담당하는 S-CSCF 이름을 모른다. LIR
     (Location-Info-Request)로 HSS에 물으면 HSS가 LIA로 서빙 S-CSCF 이름을 돌려주고,
@@ -256,6 +262,9 @@
   items:
     - {msg: "UDR", from: "AS", to: "HSS"}
     - {msg: "UDA", from: "HSS", to: "AS"}
+  decoys:
+    - {msg: "SNR", from: "AS", to: "HSS"}
+    - {msg: "SNA", from: "HSS", to: "AS"}
   explain: |
     Sh에서 AS는 UDR(User-Data-Request)로 HSS의 가입자 데이터를 조회하고 HSS는 UDA로
     데이터를 돌려준다. Sh는 AS↔HSS 간 데이터 접근/구독 인터페이스로, Cx(등록/인증)와는
@@ -274,6 +283,9 @@
     - {msg: "SNA", from: "HSS", to: "AS"}
     - {msg: "PNR", from: "HSS", to: "AS"}
     - {msg: "PNA", from: "AS", to: "HSS"}
+  decoys:
+    - {msg: "UDR", from: "AS", to: "HSS"}
+    - {msg: "UDA", from: "HSS", to: "AS"}
   explain: |
     AS가 SNR(Subscribe-Notifications-Request)로 특정 데이터 변경 통지를 구독하면 HSS가
     SNA로 확인한다. 이후 데이터가 바뀌면 HSS가 먼저 PNR(Push-Notification-Request)로
@@ -323,6 +335,9 @@
     - {msg: "AAA", from: "PCRF", to: "P-CSCF"}
     - {msg: "STR", from: "P-CSCF", to: "PCRF"}
     - {msg: "STA", from: "PCRF", to: "P-CSCF"}
+  decoys:
+    - {msg: "RAR", from: "PCRF", to: "P-CSCF"}
+    - {msg: "RAA", from: "P-CSCF", to: "PCRF"}
   explain: |
     세션 설정 시 P-CSCF(AF)는 AAR(AA-Request)로 미디어 정보를 PCRF에 주고 인가/QoS를
     요청하며 AAA로 응답을 받는다. 통화가 끝나면 STR(Session-Termination-Request)로

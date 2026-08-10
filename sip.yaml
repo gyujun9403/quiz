@@ -24,6 +24,9 @@
     - {msg: "180 Ringing", from: "착신자", to: "발신자"}
     - {msg: "200 OK", from: "착신자", to: "발신자"}
     - {msg: "ACK", from: "발신자", to: "착신자"}
+  decoys:
+    - {msg: "CANCEL", from: "발신자", to: "착신자"}
+    - {msg: "487 Request Terminated", from: "착신자", to: "발신자"}
   explain: |
     발신자가 INVITE를 보내면 잠정 응답 100 Trying이 먼저 오고, 착신 단말이
     울리면 180 Ringing이 온다. 착신자가 응답하면 200 OK가 오며, 발신자는
@@ -438,6 +441,9 @@
     - {msg: "ACK", from: "발신자", to: "착신자"}
     - {msg: "BYE", from: "착신자", to: "발신자"}
     - {msg: "200 OK (BYE 응답)", from: "발신자", to: "착신자"}
+  decoys:
+    - {msg: "CANCEL", from: "발신자", to: "착신자"}
+    - {msg: "487 Request Terminated", from: "착신자", to: "발신자"}
   explain: |
     설정 절반은 sip-0002와 같다(INVITE→100→180→200→ACK). 통화가 끝나면
     확립된 세션을 종료하려고 한쪽이 BYE를 보내고, 상대는 200 OK로 응답한다.

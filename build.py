@@ -138,6 +138,22 @@ TEMPLATE = r"""<!doctype html>
     padding: 4px;
     cursor: pointer;
   }
+  .steps-list { display: flex; flex-direction: column; gap: 6px; }
+  .steps-row {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font-size: 15px;
+    line-height: 1.4;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    color: var(--fg);
+    cursor: pointer;
+  }
+  .steps-row:active { opacity: 0.7; }
+  .steps-reveal .steps-row { cursor: default; background: var(--good-bg); color: var(--good-fg); border-color: var(--good-fg); }
   button.opt {
     display: block;
     width: 100%;
@@ -552,10 +568,15 @@ TEMPLATE = r"""<!doctype html>
   }
 
   function renderOrder(q) {
-    // uid == 정답 순서상의 인덱스(q.items 기준). 중복 문구가 있어도 안전하게 구분된다.
-    var actors = collectActors(q.items);
-    var pairs = collectPairs(q.items);
-    var pool = shuffle(q.items.map(function (item, uid) { return { item: item, uid: uid }; }));
+    // uid: 정답 항목은 0..n-1(q.items 인덱스), decoy는 "d"+k. 채점은 uid===i(숫자)로 하므로
+    // decoy(문자열 uid)를 하나라도 담으면 자동으로 오답이 된다.
+    var decoys = q.decoys || [];
+    var layoutItems = q.items.concat(decoys); // 레인/방향 후보는 정답+decoy 모두에서 모은다.
+    var actors = collectActors(layoutItems);
+    var pairs = collectPairs(layoutItems);
+    var poolItems = q.items.map(function (item, i) { return { item: item, uid: i }; })
+      .concat(decoys.map(function (item, k) { return { item: item, uid: "d" + k }; }));
+    var pool = shuffle(poolItems);
     var poolEl = el("div", { cls: "order-pool" });
     var answerEl = el("div", { cls: "order-answer" });
     // chosen[i] = { uid, item, pairIndex } — 탭한 순서대로. pairIndex는 무작위 초기값이라
@@ -607,8 +628,9 @@ TEMPLATE = r"""<!doctype html>
     var submit = el("button", { cls: "primary", text: "확인" });
     submit.addEventListener("click", function () {
       if (answered) return;
-      if (chosen.length !== q.items.length) return;
-      var isCorrect = chosen.every(function (entry, i) {
+      if (chosen.length === 0) return;
+      // 정답: 담은 것이 정확히 q.items(개수·순서·방향)와 일치하고 decoy를 하나도 안 담음.
+      var isCorrect = chosen.length === q.items.length && chosen.every(function (entry, i) {
         var pair = pairs[entry.pairIndex];
         return entry.uid === i && pair[0] === entry.item.from && pair[1] === entry.item.to;
       });
@@ -619,9 +641,102 @@ TEMPLATE = r"""<!doctype html>
     renderPool();
     renderAnswer();
 
-    elAnswerArea.appendChild(el("div", { cls: "order-label", text: "탭해서 순서대로 선택" }));
+    var poolLabel = decoys.length
+      ? "탭해서 순서대로 선택 (관련 없는 오답 조각이 섞여 있음)"
+      : "탭해서 순서대로 선택";
+    elAnswerArea.appendChild(el("div", { cls: "order-label", text: poolLabel }));
     elAnswerArea.appendChild(poolEl);
     elAnswerArea.appendChild(el("div", { cls: "order-label", text: "내 답안 (탭하면 방향 전환)" }));
+    elAnswerArea.appendChild(answerEl);
+    elAnswerArea.appendChild(resetBtn);
+    elAnswerArea.appendChild(submit);
+  }
+
+  // 정답 단계 목록을 번호 매긴 읽기 전용 노드로. steps 채점 후 reveal에서 재사용.
+  function buildStepsList(steps) {
+    var wrap = el("div", { cls: "steps-list steps-reveal" });
+    steps.forEach(function (s, i) {
+      wrap.appendChild(el("div", { cls: "steps-row", text: (i + 1) + ". " + s }));
+    });
+    return wrap;
+  }
+
+  // 절차-순서(steps): 방향/다이어그램 없이 단계 이름만 순서대로. decoy 섞임 가능.
+  function renderSteps(q) {
+    var decoys = q.decoys || [];
+    var poolItems = q.steps.map(function (s, i) { return { label: s, uid: i }; })
+      .concat(decoys.map(function (s, k) { return { label: s, uid: "d" + k }; }));
+    var pool = shuffle(poolItems);
+    var poolEl = el("div", { cls: "order-pool" });
+    var answerEl = el("div", { cls: "order-answer" });
+    var chosen = [];
+
+    function renderPool() {
+      poolEl.innerHTML = "";
+      pool.forEach(function (p) {
+        if (chosen.some(function (c) { return c.uid === p.uid; })) return;
+        var btn = el("button", { cls: "opt chip", text: p.label });
+        btn.addEventListener("click", function () {
+          if (answered) return;
+          chosen.push({ uid: p.uid, label: p.label });
+          renderPool();
+          renderAnswer();
+        });
+        poolEl.appendChild(btn);
+      });
+    }
+
+    function renderAnswer() {
+      answerEl.innerHTML = "";
+      if (chosen.length === 0) {
+        answerEl.appendChild(el("div", {
+          cls: "order-placeholder",
+          text: "위에서 순서대로 탭 → 담은 단계를 다시 탭하면 제거"
+        }));
+        return;
+      }
+      var list = el("div", { cls: "steps-list" });
+      chosen.forEach(function (entry, idx) {
+        var row = el("button", { cls: "steps-row", text: (idx + 1) + ". " + entry.label });
+        row.addEventListener("click", function () {
+          if (answered) return;
+          chosen.splice(idx, 1);
+          renderPool();
+          renderAnswer();
+        });
+        list.appendChild(row);
+      });
+      answerEl.appendChild(list);
+    }
+
+    var resetBtn = el("button", { cls: "order-reset", text: "↺ 처음부터" });
+    resetBtn.addEventListener("click", function () {
+      if (answered) return;
+      chosen = [];
+      renderPool();
+      renderAnswer();
+    });
+
+    var submit = el("button", { cls: "primary", text: "확인" });
+    submit.addEventListener("click", function () {
+      if (answered) return;
+      if (chosen.length === 0) return;
+      var isCorrect = chosen.length === q.steps.length && chosen.every(function (entry, i) {
+        return entry.uid === i;
+      });
+      submit.disabled = true;
+      showFeedback(isCorrect, q.explain, q.ref, buildStepsList(q.steps));
+    });
+
+    renderPool();
+    renderAnswer();
+
+    var poolLabel = decoys.length
+      ? "탭해서 순서대로 선택 (관련 없는 오답 단계가 섞여 있음)"
+      : "탭해서 순서대로 선택";
+    elAnswerArea.appendChild(el("div", { cls: "order-label", text: poolLabel }));
+    elAnswerArea.appendChild(poolEl);
+    elAnswerArea.appendChild(el("div", { cls: "order-label", text: "내 답안 (탭하면 제거)" }));
     elAnswerArea.appendChild(answerEl);
     elAnswerArea.appendChild(resetBtn);
     elAnswerArea.appendChild(submit);
@@ -646,6 +761,7 @@ TEMPLATE = r"""<!doctype html>
     else if (q.type === "ox") renderOx(q);
     else if (q.type === "short") renderShort(q);
     else if (q.type === "order") renderOrder(q);
+    else if (q.type === "steps") renderSteps(q);
   }
 
   elNextBtn.addEventListener("click", function () {
@@ -665,11 +781,14 @@ TEMPLATE = r"""<!doctype html>
     return DATA.some(function (q) { return q.difficulty === d; });
   });
 
+  // 순서맞추기 = 시퀀스 다이어그램(order) + 절차-순서 목록(steps) 둘 다.
+  function isFlow(q) { return q.type === "order" || q.type === "steps"; }
+
   function matching() {
     return DATA.filter(function (q) {
       var modeOk = sel.mode === "__all__" ||
-                   (sel.mode === "order" && q.type === "order") ||
-                   (sel.mode === "noorder" && q.type !== "order");
+                   (sel.mode === "order" && isFlow(q)) ||
+                   (sel.mode === "noorder" && !isFlow(q));
       return (sel.topic === "__all__" || q.topic === sel.topic) &&
              (sel.difficulty === "__all__" || q.difficulty === sel.difficulty) &&
              modeOk;
@@ -737,8 +856,8 @@ TEMPLATE = r"""<!doctype html>
 
   // 주제가 하나뿐이면 '전체'와 중복이라 주제 선택 줄은 숨긴다.
   if (topicVals.length <= 1) elTopicGroup.hidden = true;
-  // order 타입 문제가 없으면 유형 필터도 의미 없으니 숨긴다.
-  if (!DATA.some(function (q) { return q.type === "order"; })) elModeGroup.hidden = true;
+  // 흐름(order/steps) 문제가 없으면 유형 필터도 의미 없으니 숨긴다.
+  if (!DATA.some(isFlow)) elModeGroup.hidden = true;
 
   showStart();
 })();

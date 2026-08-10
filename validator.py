@@ -13,13 +13,14 @@ import yaml
 ALLOWED_TOPICS = {
     "SIP": "sip",
     "Diameter": "diam",
+    "IMS": "ims",
 }
 ALLOWED_TAGS = {
     "response-code", "method", "header", "message-flow",
     "avp", "command-code", "result-code", "transport", "concept",
 }
 ALLOWED_DIFFICULTY = {"basic", "advanced"}
-VALID_TYPES = {"mcq", "ox", "short", "order"}
+VALID_TYPES = {"mcq", "ox", "short", "order", "steps"}
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
 
 
@@ -140,19 +141,42 @@ def validate(questions):
             if not isinstance(items, list) or len(items) < 2:
                 errors.append(f"[{loc}] order items가 없거나 2개 미만")
             else:
-                for i, item in enumerate(items):
-                    if not isinstance(item, dict):
-                        errors.append(
-                            f"[{loc}] order items[{i}]가 매핑이 아님 (msg/from/to 필요)"
-                        )
-                        continue
-                    for key in ("msg", "from", "to"):
-                        if not str(item.get(key, "")).strip():
-                            errors.append(f"[{loc}] order items[{i}].{key} 비어있음")
-                    if item.get("from") and item.get("from") == item.get("to"):
-                        errors.append(f"[{loc}] order items[{i}] from/to가 동일함")
+                _check_order_items(errors, loc, "items", items)
+            # decoys: 정답이 아닌 오답 조각(선택). 구조는 items와 동일({msg,from,to}).
+            decoys = q.get("decoys")
+            if decoys is not None:
+                if not isinstance(decoys, list) or len(decoys) == 0:
+                    errors.append(f"[{loc}] order decoys가 비어있지 않은 리스트가 아님")
+                else:
+                    _check_order_items(errors, loc, "decoys", decoys)
+        elif qtype == "steps":
+            steps = q.get("steps")
+            if not isinstance(steps, list) or len(steps) < 2 \
+                    or not all(str(s).strip() for s in steps):
+                errors.append(
+                    f"[{loc}] steps가 없거나 2개 미만이거나 빈 항목 포함 (문자열 리스트)"
+                )
+            decoys = q.get("decoys")
+            if decoys is not None:
+                if not isinstance(decoys, list) or len(decoys) == 0 \
+                        or not all(str(s).strip() for s in decoys):
+                    errors.append(
+                        f"[{loc}] steps decoys가 비어있지 않은 문자열 리스트가 아님"
+                    )
 
     return errors
+
+
+def _check_order_items(errors, loc, field, items):
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            errors.append(f"[{loc}] {field}[{i}]가 매핑이 아님 (msg/from/to 필요)")
+            continue
+        for key in ("msg", "from", "to"):
+            if not str(item.get(key, "")).strip():
+                errors.append(f"[{loc}] {field}[{i}].{key} 비어있음")
+        if item.get("from") and item.get("from") == item.get("to"):
+            errors.append(f"[{loc}] {field}[{i}] from/to가 동일함")
 
 
 def main():

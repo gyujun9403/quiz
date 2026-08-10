@@ -40,7 +40,9 @@
 
 ### 허용 값 목록 (검증기가 이 목록으로 강제)
 
-- `topic`: `SIP`, `Diameter` (필요 시 사용자 승인 후 이 목록에 추가)
+- `topic`: `SIP`, `Diameter`, `IMS` (필요 시 사용자 승인 후 이 목록에 추가)
+  - `IMS`(prefix `ims-`): SIP·Diameter를 아우르는 end-to-end 절차 서사용(등록/착신/발신 등).
+    순수 SIP도 Diameter도 아닌 통합 흐름을 여기에 둔다.
 - `difficulty`: `basic`, `advanced` (2단계 — 필수 필드)
   - `basic`(기본): 응답 클래스 구조(1xx~6xx 의미), 고빈도 코드(200/180/486/404 등),
     기본 콜 플로우(등록·세션 설정·종료), 핵심 메서드 등 "가장 먼저 외워야 하는" 것.
@@ -122,6 +124,33 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
     - {msg: "INVITE", from: "발신자", to: "착신자"}
     - {msg: "100 Trying", from: "착신자", to: "발신자"}
   ```
+- `steps`→ 방향/다이어그램 **없이** 단계 이름만 순서대로 맞추는 절차-순서 타입. `steps`가
+  **정답 순서 그대로**의 문자열 배열. actor가 5개 이상이라 시퀀스 다이어그램이 폰에서
+  무너지는 **end-to-end 서사**(IMS 등록/착신/발신 등)를 표현할 때 쓴다. HTML은 칩을
+  순서대로 탭해 번호 목록으로 쌓고(담은 항목 재탭 시 제거), 채점은 순서만 본다. reveal은
+  `buildStepsList`로 정답 순서를 보여준다.
+  ```yaml
+  steps:
+    - "P-CSCF 발견 — 접속 시 단말이 P-CSCF 주소 확보"
+    - "REGISTER 전달: UE → P-CSCF → I-CSCF"
+  ```
+
+### `decoys` — 오답 조각 (order/steps 공통, 선택 필드)
+
+`order`/`steps`의 풀에 **정답이 아닌 조각**을 섞어 "나열만 하면 끝"을 막는다(재인이 아니라
+실제 지식을 요구). 구조는 해당 타입의 정답과 동일(`order`는 `{msg,from,to}`, `steps`는
+문자열). 채점: 담은 것이 정답과 정확히 일치하고 **decoy를 하나도 안 담아야** 정답
+(내부적으로 정답 조각엔 숫자 uid, decoy엔 문자열 uid를 줘 자동 구분). reveal은 정답만
+보여준다(decoy 제외).
+
+- **Diameter는 decoy를 요청/응답(`~R`/`~A`) 쌍으로 넣는다.** 하나만 넣으면 "짝 없는 게
+  decoy"라고 바로 들킨다(예: Cx 등록 흐름에 착신용 `LIR`+`LIA` 세트를 decoy로).
+- 좋은 decoy = 헷갈리는 것: 다른 인터페이스/국면의 커맨드, 다른 시나리오의 단계.
+  ```yaml
+  decoys:
+    - {msg: "LIR", from: "I-CSCF", to: "HSS"}
+    - {msg: "LIA", from: "HSS", to: "I-CSCF"}
+  ```
 
 ### ID 규칙 (중요)
 
@@ -149,7 +178,8 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 - `mcq`: `answer`가 `choices` 인덱스 범위 안인지.
 - `ox`: `answer`가 불리언인지.
 - `short`: `answer`가 비어있지 않은 리스트인지.
-- `order`: `items`가 2개 이상인지.
+- `order`: `items`가 2개 이상인지. `decoys`(있으면) 각 항목이 `{msg,from,to}` 구조인지.
+- `steps`: `steps`가 2개 이상 문자열인지. `decoys`(있으면) 비어있지 않은 문자열 리스트인지.
 - `id` 중복 여부, ID 형식(접두어-숫자).
 - `ref`가 비어있지 않은지 (필수).
 - `topic`이 허용 목록 안인지. 벗어나면 거부.
@@ -247,7 +277,16 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
   관점, 인터페이스 단위 2~3 actor 흐름. 다룬 것: Cx 등록 UAR/UAA→MAR/MAA→SAR/SAA(3-actor),
   착신 LIR/LIA, 커맨드 역할·코드(300~303), Experimental-Result(2001~2004/5001~5005 대역),
   Sh UDR·SNR/PNR, Rx AAR·STR/ASR. 전량 3GPP TS 29.228/229/230·29.328/329·29.214,
-  RFC 6733 대조 검증. 커맨드코드·Result코드는 TS 29.230 레지스트리로 확정. 총 70문제.
+  RFC 6733 대조 검증. 커맨드코드·Result코드는 TS 29.230 레지스트리로 확정.
+- [x] **`steps` 타입 + `decoys` 도입** (사용자 피드백: order가 "나열만 하면 끝"이라 너무 쉽고,
+  단일 인터페이스 조각만 있어 전체 서사가 안 보임). (1) `decoys`: order/steps 풀에 오답
+  조각(Diameter는 R/A 쌍)을 섞어 채점 시 하나라도 담으면 오답. 기존 order 7개에 소급 적용
+  (diam-0001/0002/0017/0018/0021, sip-0002/0030). (2) `steps`: 방향 없는 절차-순서 목록형
+  타입 — 5+ actor라 다이어그램이 무너지는 end-to-end 서사용. `IMS` 토픽 신설(prefix `ims-`).
+- [x] **IMS end-to-end 서사 3개**(`ims.yaml`, steps 타입): 등록(ims-0001)·착신(ims-0002)·
+  발신(ims-0003) 전체 흐름. SIP REGISTER/INVITE 전달에 Cx(UAR/MAR/SAR, LIR)·Rx(AAR)가
+  어디서 맞물리는지를 한 서사로 꿰고, 다른 시나리오 커맨드 쌍을 decoy로. TS 24.229/29.228
+  대조. 총 73문제(SIP 46 / Diameter 24 / IMS 3). '순서맞추기' 필터는 order+steps 모두 포함.
 
 ## 지금 열린 항목 (다음 작업)
 
@@ -264,7 +303,12 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
    6메시지)이 실제 폰 세로 화면에서 lifeline/화살표가 안 겹치는지 확인 필요. 겹치면
    렌더러 조정(폭 배분·라벨 줄바꿈) 후 4-actor 흐름 확장 판단. 나머지 Diameter order는
    전부 2-actor라 안전.
-4. **Diameter 계속 확장** — Cx/Sh/Rx 1차분 완료. 후보: Cx 등록 해제/재등록(SAR
-   Server-Assignment-Type), RTR/PPR(HSS 발신), Rx RAR(베어러 이벤트 통지), Sh PUR(데이터
-   갱신). EPC(S6a/S13: MME/HSS/EIR)는 사용자가 원하면 별도 track(3GPP TS 29.272 대조).
-5. 폰에서 새로 추가된 문제들 훑어보며 오탈자/레이아웃 확인 (아직 안 함).
+4. **EPC 트랙(2차 웨이브) — 핸드폰 켜기·통신사 변경 서사 완성.** IMS 등록 서사(ims-0001)는
+   "핸드폰 켜기"의 후반부다. 앞에 EPC 접속을 이어 붙이면 완성: PLMN 선택·RRC → NAS Attach →
+   S6a 인증정보(AIR/AIA)·AKA → S6a 위치등록(ULR/ULA) → 기본 베어러 → IMS 등록. USIM 통신사
+   변경도 "새 망 첫 attach + 재등록"으로 같은 골격. 필요 커맨드: S6a(MME↔HSS 인증/위치등록),
+   S13(MME↔EIR 단말식별 ECR/ECA). 3GPP TS 23.401(attach)·29.272(S6a/S13) 대조 필요.
+5. **Diameter 인터페이스 심화** — Cx 등록 해제/재등록, RTR/PPR(HSS 발신), Rx RAR(베어러
+   이벤트), Sh PUR. (요금제 변경은 프로비저닝/정책 성격이라 order보다 개념 문제로 — 보류.)
+6. 폰에서 새로 추가된 문제들 훑어보며 오탈자/레이아웃 확인 (아직 안 함). 특히 `steps`
+   타입(ims-0001~0003)과 decoy 섞인 order를 폰에서 실제로 풀어보며 UX 확인.

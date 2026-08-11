@@ -167,6 +167,21 @@ def validate(questions):
                 else:
                     # decoy는 레인에 없는 actor를 참조해도 됨(그려지지 않고 오답 보기로만 쓰임).
                     _check_steps_items(errors, loc, "decoys", decoys, None)
+            # glossary(선택): 있으면 steps+decoys의 모든 act를 커버해야 함(찍기 방지 피드백 완성도).
+            glossary = q.get("glossary")
+            if glossary is not None:
+                if not isinstance(glossary, dict):
+                    errors.append(f"[{loc}] glossary가 매핑(dict)이 아님")
+                else:
+                    acts = set()
+                    for src in (steps, decoys):
+                        if isinstance(src, list):
+                            for it in src:
+                                if isinstance(it, dict) and str(it.get("act", "")).strip():
+                                    acts.add(it["act"])
+                    missing = sorted(a for a in acts if a not in glossary)
+                    if missing:
+                        errors.append(f"[{loc}] glossary에 누락된 act: {missing}")
 
     return errors
 

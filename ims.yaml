@@ -27,6 +27,16 @@
   decoys:
     - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}
     - {from: "P-CSCF", to: "PCRF", act: "AAR/AAA"}
+  glossary:
+    "REGISTER": "SIP REGISTER · 단말이 자신의 현재 위치(Contact)를 등록"
+    "UAR/UAA": "User-Authorization-Request/Answer · Cx · I-CSCF가 등록 인가받고 배정할 S-CSCF를 HSS에서 확인"
+    "MAR/MAA": "Multimedia-Auth-Request/Answer · Cx · S-CSCF가 HSS에서 인증 벡터(AV)를 받아 401 챌린지"
+    "401 챌린지": "SIP 401 Unauthorized · S-CSCF가 인증 챌린지(RAND/AUTN 등)를 발행"
+    "재-REGISTER": "SIP REGISTER 재전송 · 401에 자격증명(RES) 담아 재등록"
+    "SAR/SAA": "Server-Assignment-Request/Answer · Cx · S-CSCF가 자신을 사용자에 할당하고 프로필 다운로드"
+    "200 OK": "SIP 200 OK · 등록 성공 확인"
+    "LIR/LIA": "Location-Info-Request/Answer · Cx · 착신 시 I-CSCF가 서빙 S-CSCF를 HSS에 조회(등록 아님)"
+    "AAR/AAA": "AA-Request/Answer · Rx · P-CSCF가 PCRF에 미디어 자원 인가 요청(세션용, 등록 아님)"
   explain: |
     등록은 SIP REGISTER 릴레이(UE→P-CSCF→I-CSCF→S-CSCF)에 Cx가 세 번 맞물린다:
     I-CSCF의 UAR/UAA(S-CSCF 선택) → S-CSCF의 MAR/MAA(인증 벡터→401 챌린지) → 재등록 후
@@ -52,6 +62,12 @@
   decoys:
     - {from: "I-CSCF", to: "HSS", act: "UAR/UAA"}
     - {from: "S-CSCF", to: "HSS", act: "SAR/SAA"}
+  glossary:
+    "INVITE": "SIP INVITE · 세션(통화) 설정 요청"
+    "LIR/LIA": "Location-Info-Request/Answer · Cx · I-CSCF가 서빙 S-CSCF 이름을 HSS에 조회"
+    "180/200/ACK": "SIP 180 Ringing→200 OK→ACK · 호 설정 완료(벨→응답→확인)"
+    "UAR/UAA": "User-Authorization-Request/Answer · Cx · 등록 인가·S-CSCF 선택(착신 아님)"
+    "SAR/SAA": "Server-Assignment-Request/Answer · Cx · 서버 할당·프로필(등록 마무리, 착신 아님)"
   explain: |
     착신망의 진입점 I-CSCF가 INVITE를 받으면 서빙 S-CSCF를 모르므로 LIR/LIA로 HSS에
     조회해 라우팅한다. S-CSCF가 착신 서비스(iFC)를 적용해 UE로 전달하고 호가 설정된다.
@@ -77,6 +93,12 @@
   decoys:
     - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}
     - {from: "S-CSCF", to: "HSS", act: "MAR/MAA"}
+  glossary:
+    "INVITE": "SIP INVITE · 세션(통화) 설정 요청"
+    "AAR/AAA": "AA-Request/Answer · Rx · P-CSCF(AF)가 PCRF에 미디어 정보 전달·자원 인가 요청"
+    "180/200/ACK": "SIP 180 Ringing→200 OK→ACK · 호 설정 완료(벨→응답→확인)"
+    "LIR/LIA": "Location-Info-Request/Answer · Cx · 착신 시 서빙 S-CSCF 조회(발신 아님)"
+    "MAR/MAA": "Multimedia-Auth-Request/Answer · Cx · 등록 시 인증 벡터(발신 아님)"
   explain: |
     발신은 P-CSCF가 등록 때 받은 Service-Route를 따라 사용자의 S-CSCF로 INVITE를 보내는
     것이 출발점이다. S-CSCF가 발신 서비스(iFC)를 적용해 상대망으로 라우팅하고, 미디어는

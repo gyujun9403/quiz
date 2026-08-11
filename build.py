@@ -60,14 +60,14 @@ TEMPLATE = r"""<!doctype html>
   #app {
     width: 100%;
     max-width: 480px;
-    padding: 12px;
-    padding-bottom: 48px;
+    padding: 10px;
+    padding-bottom: 36px;
   }
   header {
     display: flex;
     justify-content: space-between;
     align-items: baseline;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
     color: var(--muted);
     font-size: 13px;
   }
@@ -75,7 +75,7 @@ TEMPLATE = r"""<!doctype html>
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 14px;
+    padding: 12px;
   }
   .badges { margin-bottom: 10px; }
   .badge {
@@ -104,8 +104,19 @@ TEMPLATE = r"""<!doctype html>
   #answer-area {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
   }
+  .step-note {
+    font-size: 12px;
+    line-height: 1.45;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+  }
+  .step-note .full { color: var(--muted); margin-top: 2px; }
+  .step-note .miss { color: var(--bad-fg); margin-top: 3px; }
+  .step-note .ok { color: var(--good-fg); font-weight: 700; }
   .order-label {
     font-size: 12px;
     color: var(--muted);
@@ -114,8 +125,8 @@ TEMPLATE = r"""<!doctype html>
     display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 8px;
-    padding: 2px;
+    gap: 6px;
+    padding: 1px;
   }
   .order-answer {
     min-height: 44px;
@@ -154,6 +165,8 @@ TEMPLATE = r"""<!doctype html>
   button.opt.chip {
     display: inline-block;
     width: auto;
+    padding: 9px 12px;
+    font-size: 14px;
   }
   button.opt.chip.sel { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); font-weight: 600; }
   button.opt.correct { background: var(--good-bg); color: var(--good-fg); border-color: var(--good-fg); }
@@ -204,8 +217,8 @@ TEMPLATE = r"""<!doctype html>
   .feedback .explain { white-space: pre-wrap; line-height: 1.5; margin: 0 0 10px; }
   .feedback .ref { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
   .diagram-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -2px; }
-  .diagram { position: relative; margin: 4px 0 14px; font-size: 11px; }
-  .diagram-header { position: relative; height: 28px; }
+  .diagram { position: relative; margin: 2px 0 8px; font-size: 11px; }
+  .diagram-header { position: relative; height: 26px; }
   .diagram-actor {
     position: absolute;
     top: 0;
@@ -648,9 +661,9 @@ TEMPLATE = r"""<!doctype html>
   }
 
   // 절차-순서(steps): 각 단계가 {from,to,act} 화살표. 매 단계 "대상(from→to)"·"동작(act)"을
-  // 각각 후보에서 골라 확인. 맞으면 화살표가 초록으로 그려지며 즉시 다음 단계(추가 버튼 없음),
-  // 틀리면 그 슬롯만 빨갛게 표시하고 그 자리에서 다시 고른다(맞을 때까지). rt(요청/응답) 단계는
-  // 요청→·응답← 두 화살표로 펼친다. 끝에 "첫 시도 정답 X/Y".
+  // 각각 후보에서 골라 확인 → 그 커맨드의 풀네임·동작(용어사전 glossary)을 보여주고(맞든
+  // 틀리든 학습), '다음 ▸'로 진행. 화살표는 정답 흐름으로 그려지며 쌓임(rt는 요청→·응답←
+  // 두 화살표). 틀린 슬롯만 빨강 표시, 끝에 "정답 X/Y".
   function renderSteps(q) {
     var steps = q.steps;
     var extras = q.decoys || [];
@@ -662,11 +675,12 @@ TEMPLATE = r"""<!doctype html>
       if (pairPool.indexOf(pk) === -1) pairPool.push(pk);
       if (actPool.indexOf(s.act) === -1) actPool.push(s.act);
     });
-    var k = 0, firstTry = 0;
+    var gloss = q.glossary || {};
+    var k = 0, correct = 0;
 
-    function optionsFor(pool, correct) {
-      var others = shuffle(pool.filter(function (x) { return x !== correct; })).slice(0, 3);
-      return shuffle(others.concat([correct]));
+    function optionsFor(pool, c) {
+      var others = shuffle(pool.filter(function (x) { return x !== c; })).slice(0, 3);
+      return shuffle(others.concat([c]));
     }
 
     // rt 단계는 요청(from→to)·응답(to→from) 두 화살표로. stepIdx로 방금 확정한 단계를 강조.
@@ -687,27 +701,47 @@ TEMPLATE = r"""<!doctype html>
       return rows;
     }
 
+    function gradeLock(row, c, sel) {
+      Array.prototype.forEach.call(row.children, function (b) {
+        b.disabled = true; b.classList.remove("sel");
+        if (b.textContent === c) b.classList.add("correct");
+        else if (b.textContent === sel) b.classList.add("wrong");
+      });
+    }
+
+    // 확인 후 표시하는 뜻 패널: 정답 대상·동작 + 커맨드 풀네임/동작(용어사전). 틀렸으면 왜 아닌지.
+    function buildNote(cur, curPair, selPair, selAct) {
+      var box = el("div", { cls: "step-note" });
+      box.appendChild(el("div", { cls: "ok", text: "정답: [" + curPair + "]  " + cur.act }));
+      if (gloss[cur.act]) box.appendChild(el("div", { cls: "full", text: gloss[cur.act] }));
+      if (selAct !== cur.act) {
+        var g = gloss[selAct] ? selAct + " = " + gloss[selAct] : selAct;
+        box.appendChild(el("div", { cls: "miss", text: "✗ 고른 동작 " + g + " → 여기선 아님" }));
+      }
+      if (selPair !== curPair) {
+        box.appendChild(el("div", { cls: "miss", text: "✗ 대상 정답은 " + curPair }));
+      }
+      return box;
+    }
+
     function renderStep() {
       elAnswerArea.innerHTML = "";
       elAnswerArea.appendChild(el("div", {
-        cls: "order-label", text: "지금까지 · 첫 시도 정답 " + firstTry + "/" + steps.length
+        cls: "order-label", text: "지금까지 · 정답 " + correct + "/" + steps.length
       }));
       elAnswerArea.appendChild(renderDiagram(laneActors, expandRows(k), null, k - 1));
 
       var cur = steps[k];
       var curPair = cur.from + " → " + cur.to;
-      var pairSolved = false, actSolved = false, wrongThisStep = false;
       var selPair = null, selAct = null;
 
-      function makeRow(pool, correct, onPick) {
+      function makeRow(pool, c, onPick) {
         var row = el("div", { cls: "order-pool" });
-        optionsFor(pool, correct).forEach(function (v) {
+        optionsFor(pool, c).forEach(function (v) {
           var b = el("button", { cls: "opt chip", text: v });
           b.addEventListener("click", function () {
             if (b.disabled) return;
-            Array.prototype.forEach.call(row.children, function (x) {
-              if (!x.disabled) x.classList.remove("sel");
-            });
+            Array.prototype.forEach.call(row.children, function (x) { x.classList.remove("sel"); });
             b.classList.add("sel");
             onPick(v);
           });
@@ -716,7 +750,7 @@ TEMPLATE = r"""<!doctype html>
         return row;
       }
 
-      elAnswerArea.appendChild(el("div", { cls: "order-label", text: (k + 1) + "번째 단계 — 대상(누가→누구)?" }));
+      elAnswerArea.appendChild(el("div", { cls: "order-label", text: (k + 1) + "번째 — 대상(누가→누구)?" }));
       var pairRow = makeRow(pairPool, curPair, function (v) { selPair = v; refresh(); });
       elAnswerArea.appendChild(pairRow);
 
@@ -725,46 +759,26 @@ TEMPLATE = r"""<!doctype html>
       elAnswerArea.appendChild(actRow);
 
       var submit = el("button", { cls: "primary", text: "확인" });
-      function refresh() {
-        submit.disabled = (!pairSolved && !selPair) || (!actSolved && !selAct);
-      }
-      refresh();
-
-      // 정답이면 초록+잠금 후 true, 오답이면 그 버튼만 빨강+비활성 후 false.
-      function solveSlot(row, correct, sel) {
-        if (sel === correct) {
-          Array.prototype.forEach.call(row.children, function (b) {
-            b.disabled = true; b.classList.remove("sel");
-            if (b.textContent === correct) b.classList.add("correct");
-          });
-          return true;
-        }
-        Array.prototype.forEach.call(row.children, function (b) {
-          if (b.textContent === sel) { b.classList.remove("sel"); b.classList.add("wrong"); b.disabled = true; }
-        });
-        return false;
-      }
+      submit.disabled = true;
+      function refresh() { submit.disabled = !(selPair && selAct); }
 
       submit.addEventListener("click", function () {
         if (submit.disabled) return;
-        if (!pairSolved) {
-          if (solveSlot(pairRow, curPair, selPair)) pairSolved = true;
-          else { wrongThisStep = true; selPair = null; }
-        }
-        if (!actSolved) {
-          if (solveSlot(actRow, cur.act, selAct)) actSolved = true;
-          else { wrongThisStep = true; selAct = null; }
-        }
-        if (pairSolved && actSolved) {
-          if (!wrongThisStep) firstTry++;
+        gradeLock(pairRow, curPair, selPair);
+        gradeLock(actRow, cur.act, selAct);
+        if (selPair === curPair && selAct === cur.act) correct++;
+        elAnswerArea.appendChild(buildNote(cur, curPair, selPair, selAct));
+        submit.remove();
+        var last = (k === steps.length - 1);
+        var next = el("button", { cls: "primary", text: last ? "결과 보기" : "다음 ▸" });
+        next.addEventListener("click", function () {
           k++;
           if (k < steps.length) renderStep();
-          else showFeedback(firstTry === steps.length,
-            "첫 시도 정답 " + firstTry + "/" + steps.length + "단계\n\n" + q.explain,
+          else showFeedback(correct === steps.length,
+            "정답 " + correct + "/" + steps.length + "단계\n\n" + q.explain,
             q.ref, renderDiagram(laneActors, expandRows(steps.length), null, -1));
-        } else {
-          refresh();
-        }
+        });
+        elAnswerArea.appendChild(next);
       });
       elAnswerArea.appendChild(submit);
     }

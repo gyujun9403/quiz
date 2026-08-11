@@ -17,12 +17,12 @@
   steps:
     - {from: "UE", to: "P-CSCF", act: "REGISTER"}
     - {from: "P-CSCF", to: "I-CSCF", act: "REGISTER"}
-    - {from: "I-CSCF", to: "HSS", act: "UAR/UAA"}
+    - {from: "I-CSCF", to: "HSS", act: "UAR/UAA", rt: true}
     - {from: "I-CSCF", to: "S-CSCF", act: "REGISTER"}
-    - {from: "S-CSCF", to: "HSS", act: "MAR/MAA"}
+    - {from: "S-CSCF", to: "HSS", act: "MAR/MAA", rt: true}
     - {from: "S-CSCF", to: "UE", act: "401 챌린지"}
     - {from: "UE", to: "S-CSCF", act: "재-REGISTER"}
-    - {from: "S-CSCF", to: "HSS", act: "SAR/SAA"}
+    - {from: "S-CSCF", to: "HSS", act: "SAR/SAA", rt: true}
     - {from: "S-CSCF", to: "UE", act: "200 OK"}
   decoys:
     - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}
@@ -45,7 +45,7 @@
   actors: ["발신자", "I-CSCF", "HSS", "S-CSCF", "UE"]
   steps:
     - {from: "발신자", to: "I-CSCF", act: "INVITE"}
-    - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}
+    - {from: "I-CSCF", to: "HSS", act: "LIR/LIA", rt: true}
     - {from: "I-CSCF", to: "S-CSCF", act: "INVITE"}
     - {from: "S-CSCF", to: "UE", act: "INVITE"}
     - {from: "UE", to: "발신자", act: "180/200/ACK"}
@@ -72,7 +72,7 @@
     - {from: "UE", to: "P-CSCF", act: "INVITE"}
     - {from: "P-CSCF", to: "S-CSCF", act: "INVITE"}
     - {from: "S-CSCF", to: "상대망", act: "INVITE"}
-    - {from: "P-CSCF", to: "PCRF", act: "AAR/AAA"}
+    - {from: "P-CSCF", to: "PCRF", act: "AAR/AAA", rt: true}
     - {from: "상대망", to: "UE", act: "180/200/ACK"}
   decoys:
     - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}

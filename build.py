@@ -259,6 +259,9 @@ TEMPLATE = r"""<!doctype html>
   .diagram-row.tappable .diagram-line::after { color: var(--accent); }
   .diagram-row.tappable:active .diagram-msg,
   .diagram-row.tappable:active .diagram-line { opacity: 0.5; }
+  .diagram-row.hl .diagram-msg { color: var(--good-fg); font-weight: 700; }
+  .diagram-row.hl .diagram-line { background: var(--good-fg); height: 2px; }
+  .diagram-row.hl .diagram-line::after { color: var(--good-fg); }
   footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
   .start-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
   .picker-group { margin-bottom: 18px; }
@@ -436,7 +439,8 @@ TEMPLATE = r"""<!doctype html>
   // onRowClick(rowIndex)를 주면 각 줄이 탭 가능해진다(방향 전환용) — 안 주면 읽기 전용.
   var DIAGRAM_ROW_H = 44;
 
-  function renderDiagram(actors, rows, onRowClick) {
+  // highlightStep(선택): r.stepIdx === highlightStep 인 화살표를 초록으로 강조(방금 확정한 단계).
+  function renderDiagram(actors, rows, onRowClick, highlightStep) {
     var n = actors.length;
     var xOf = function (i) { return (i + 0.5) / n * 100; };
 
@@ -466,7 +470,8 @@ TEMPLATE = r"""<!doctype html>
       var x1 = xOf(Math.min(fromIdx, toIdx));
       var x2 = xOf(Math.max(fromIdx, toIdx));
 
-      var row = el("div", { cls: "diagram-row" + (onRowClick ? " tappable" : "") });
+      var hl = (highlightStep != null && r.stepIdx === highlightStep) ? " hl" : "";
+      var row = el("div", { cls: "diagram-row" + (onRowClick ? " tappable" : "") + hl });
       row.style.top = (idx * DIAGRAM_ROW_H) + "px";
 
       var msg = el("div", { cls: "diagram-msg", text: (idx + 1) + ". " + r.msg });
@@ -642,9 +647,10 @@ TEMPLATE = r"""<!doctype html>
     elAnswerArea.appendChild(submit);
   }
 
-  // 절차-순서(steps): 각 단계가 {from,to,act} 화살표. 위에서부터 한 단계씩 "대상(from→to)"과
-  // "동작(act)"을 각각 후보에서 고르면(둘 다 커밋 후 확인) 그 화살표가 시퀀스 다이어그램에
-  // 그려지며 쌓인다. 틀리면 정답 공개 후 계속 진행(끝까지 서사를 봄).
+  // 절차-순서(steps): 각 단계가 {from,to,act} 화살표. 매 단계 "대상(from→to)"·"동작(act)"을
+  // 각각 후보에서 골라 확인. 맞으면 화살표가 초록으로 그려지며 즉시 다음 단계(추가 버튼 없음),
+  // 틀리면 그 슬롯만 빨갛게 표시하고 그 자리에서 다시 고른다(맞을 때까지). rt(요청/응답) 단계는
+  // 요청→·응답← 두 화살표로 펼친다. 끝에 "첫 시도 정답 X/Y".
   function renderSteps(q) {
     var steps = q.steps;
     var extras = q.decoys || [];
@@ -656,83 +662,109 @@ TEMPLATE = r"""<!doctype html>
       if (pairPool.indexOf(pk) === -1) pairPool.push(pk);
       if (actPool.indexOf(s.act) === -1) actPool.push(s.act);
     });
-    var k = 0, mistakes = 0;
+    var k = 0, firstTry = 0;
 
     function optionsFor(pool, correct) {
       var others = shuffle(pool.filter(function (x) { return x !== correct; })).slice(0, 3);
       return shuffle(others.concat([correct]));
     }
 
-    function markSel(row, btn) {
-      Array.prototype.forEach.call(row.children, function (b) { b.classList.remove("sel"); });
-      btn.classList.add("sel");
-    }
-
-    function gradeRow(row, correctVal, selVal) {
-      Array.prototype.forEach.call(row.children, function (b) {
-        b.classList.remove("sel");
-        b.disabled = true;
-        if (b.textContent === correctVal) b.classList.add("correct");
-        else if (b.textContent === selVal) b.classList.add("wrong");
-      });
-    }
-
-    function buildChoiceRow(pool, correct, onPick) {
-      var row = el("div", { cls: "order-pool" });
-      optionsFor(pool, correct).forEach(function (v) {
-        var b = el("button", { cls: "opt chip", text: v });
-        b.addEventListener("click", function () {
-          if (b.disabled) return;
-          markSel(row, b);
-          onPick(v);
-        });
-        row.appendChild(b);
-      });
-      return row;
-    }
-
-    function diagramUpTo(n) {
-      var rows = steps.slice(0, n).map(function (s) {
-        return { msg: s.act, from: s.from, to: s.to };
-      });
-      return renderDiagram(laneActors, rows, null);
+    // rt 단계는 요청(from→to)·응답(to→from) 두 화살표로. stepIdx로 방금 확정한 단계를 강조.
+    function expandRows(nSteps) {
+      var rows = [];
+      for (var i = 0; i < nSteps; i++) {
+        var s = steps[i];
+        if (s.rt) {
+          var parts = s.act.split("/");
+          var reqL = parts[0];
+          var ansL = parts.length > 1 ? parts.slice(1).join("/") : s.act;
+          rows.push({ msg: reqL, from: s.from, to: s.to, stepIdx: i });
+          rows.push({ msg: ansL, from: s.to, to: s.from, stepIdx: i });
+        } else {
+          rows.push({ msg: s.act, from: s.from, to: s.to, stepIdx: i });
+        }
+      }
+      return rows;
     }
 
     function renderStep() {
       elAnswerArea.innerHTML = "";
-      elAnswerArea.appendChild(el("div", { cls: "order-label", text: "지금까지" }));
-      elAnswerArea.appendChild(diagramUpTo(k));
+      elAnswerArea.appendChild(el("div", {
+        cls: "order-label", text: "지금까지 · 첫 시도 정답 " + firstTry + "/" + steps.length
+      }));
+      elAnswerArea.appendChild(renderDiagram(laneActors, expandRows(k), null, k - 1));
 
       var cur = steps[k];
       var curPair = cur.from + " → " + cur.to;
+      var pairSolved = false, actSolved = false, wrongThisStep = false;
       var selPair = null, selAct = null;
 
+      function makeRow(pool, correct, onPick) {
+        var row = el("div", { cls: "order-pool" });
+        optionsFor(pool, correct).forEach(function (v) {
+          var b = el("button", { cls: "opt chip", text: v });
+          b.addEventListener("click", function () {
+            if (b.disabled) return;
+            Array.prototype.forEach.call(row.children, function (x) {
+              if (!x.disabled) x.classList.remove("sel");
+            });
+            b.classList.add("sel");
+            onPick(v);
+          });
+          row.appendChild(b);
+        });
+        return row;
+      }
+
       elAnswerArea.appendChild(el("div", { cls: "order-label", text: (k + 1) + "번째 단계 — 대상(누가→누구)?" }));
-      var pairRow = buildChoiceRow(pairPool, curPair, function (v) { selPair = v; refresh(); });
+      var pairRow = makeRow(pairPool, curPair, function (v) { selPair = v; refresh(); });
       elAnswerArea.appendChild(pairRow);
 
       elAnswerArea.appendChild(el("div", { cls: "order-label", text: "동작(무엇)?" }));
-      var actRow = buildChoiceRow(actPool, cur.act, function (v) { selAct = v; refresh(); });
+      var actRow = makeRow(actPool, cur.act, function (v) { selAct = v; refresh(); });
       elAnswerArea.appendChild(actRow);
 
       var submit = el("button", { cls: "primary", text: "확인" });
-      submit.disabled = true;
-      function refresh() { submit.disabled = !(selPair && selAct); }
+      function refresh() {
+        submit.disabled = (!pairSolved && !selPair) || (!actSolved && !selAct);
+      }
+      refresh();
+
+      // 정답이면 초록+잠금 후 true, 오답이면 그 버튼만 빨강+비활성 후 false.
+      function solveSlot(row, correct, sel) {
+        if (sel === correct) {
+          Array.prototype.forEach.call(row.children, function (b) {
+            b.disabled = true; b.classList.remove("sel");
+            if (b.textContent === correct) b.classList.add("correct");
+          });
+          return true;
+        }
+        Array.prototype.forEach.call(row.children, function (b) {
+          if (b.textContent === sel) { b.classList.remove("sel"); b.classList.add("wrong"); b.disabled = true; }
+        });
+        return false;
+      }
 
       submit.addEventListener("click", function () {
         if (submit.disabled) return;
-        gradeRow(pairRow, curPair, selPair);
-        gradeRow(actRow, cur.act, selAct);
-        if (selPair !== curPair || selAct !== cur.act) mistakes++;
-        submit.remove();
-        var last = (k === steps.length - 1);
-        var next = el("button", { cls: "primary", text: last ? "결과 보기" : "다음 단계" });
-        next.addEventListener("click", function () {
+        if (!pairSolved) {
+          if (solveSlot(pairRow, curPair, selPair)) pairSolved = true;
+          else { wrongThisStep = true; selPair = null; }
+        }
+        if (!actSolved) {
+          if (solveSlot(actRow, cur.act, selAct)) actSolved = true;
+          else { wrongThisStep = true; selAct = null; }
+        }
+        if (pairSolved && actSolved) {
+          if (!wrongThisStep) firstTry++;
           k++;
           if (k < steps.length) renderStep();
-          else showFeedback(mistakes === 0, q.explain, q.ref, diagramUpTo(steps.length));
-        });
-        elAnswerArea.appendChild(next);
+          else showFeedback(firstTry === steps.length,
+            "첫 시도 정답 " + firstTry + "/" + steps.length + "단계\n\n" + q.explain,
+            q.ref, renderDiagram(laneActors, expandRows(steps.length), null, -1));
+        } else {
+          refresh();
+        }
       });
       elAnswerArea.appendChild(submit);
     }

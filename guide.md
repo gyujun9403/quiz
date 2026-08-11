@@ -129,15 +129,19 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
   `UAR/UAA`처럼 화살표 하나로 압축). `actors`(권장)로 lifeline 좌→우 순서를 고정한다.
   HTML은 **다이어그램-성장 워크스루**로 렌더: 위에 시퀀스 다이어그램(`renderDiagram` 재사용)이
   있고, 매 단계 **대상(from→to)·동작(act)을 각각 후보에서** 고른다. 둘 다 커밋 후 확인(교차
-  힌트 방지)하면 그 **화살표가 다이어그램에 그려지며 쌓인다**. 틀리면 정답을 초록으로 공개하고
-  계속 진행(끝까지 서사를 봄), 실수가 하나라도 있으면 최종 판정은 오답. 각 칸 후보는
+  힌트 방지). **맞으면 그 화살표가 초록으로 그려지며 즉시 다음 단계**(추가 버튼 없음),
+  **틀리면 그 슬롯만 빨갛게 표시하고 그 자리에서 다시 고른다**(맞을 때까지). 끝에 "첫 시도
+  정답 X/Y"를 보여주고, 전 단계를 첫 시도에 맞혔을 때만 정답 판정. 각 칸 후보는
   `steps`+`decoys`의 대상/동작 풀에서 정답+오답 3개 샘플. 내부 처리(iFC 등)나 릴레이 세부는
   화살표로 안 그리고 `explain`에 둔다. actor가 많으면 다이어그램은 가로 스크롤로 떨어진다.
+  - **`rt: true`**(선택): 요청/응답 쌍 단계. 다이어그램에서 요청(from→to)·응답(to→from) **두
+    화살표**로 펼치고, `act`를 `/`로 나눠(예: `UAR/UAA`→`UAR`,`UAA`) 각 화살표에 라벨. 픽은
+    여전히 한 번(대상=요청 방향).
   ```yaml
   actors: ["UE", "P-CSCF", "I-CSCF", "S-CSCF", "HSS"]
   steps:
-    - {from: "I-CSCF", to: "HSS", act: "UAR/UAA"}
-    - {from: "S-CSCF", to: "HSS", act: "MAR/MAA"}
+    - {from: "I-CSCF", to: "HSS", act: "UAR/UAA", rt: true}
+    - {from: "S-CSCF", to: "UE", act: "401 챌린지"}
   ```
 
 ### `decoys` — 오답 조각 (order/steps 공통, 선택 필드)
@@ -303,6 +307,10 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
   UE·P-CSCF·I-CSCF·S-CSCF·HSS / 착신: 발신자·I-CSCF·HSS·S-CSCF·UE / 발신: UE·P-CSCF·PCRF·
   S-CSCF·상대망). 폰 여백 축소(#app 12·card 14·diagram 11px·actor패딩 축소) + 넘치면
   `.diagram-scroll` 가로 스크롤 폴백. 다중 actor(3+) 폰 검증 대상이 diam-0001 → ims 5-actor로 확장.
+- [x] **steps 워크스루 UX 개선**(피드백 4건): (1) R/A 쌍은 `rt:true`로 요청→·응답← 두 화살표
+  펼침. (2) 틀리면 그 자리에서 재시도(뒤로가기 대신 맞을 때까지). (3) 틀린 슬롯만 빨강 표시
+  + 끝에 "첫 시도 정답 X/Y". (4) 맞으면 화살표 초록 강조 후 **즉시 다음**(별도 '다음' 버튼
+  제거). renderDiagram에 highlightStep 파라미터·`.diagram-row.hl` 추가.
 
 ## 지금 열린 항목 (다음 작업)
 

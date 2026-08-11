@@ -1,6 +1,7 @@
 # IMS end-to-end 절차 서사 (SIP + Diameter 통합). 실제 이벤트별 "전체 흐름" 암기용.
-# steps 타입: 방향/다이어그램 없이 단계 이름만 순서대로. decoy는 다른 시나리오의
-# 그럴듯한 단계(주로 커맨드 R/A 쌍)를 섞어 "관련 있는 것만 고르기"를 강제한다.
+# steps 타입: 각 단계를 {actor(대상), act(동작)} 두 축으로 나눠, 워크스루에서 매 단계
+# 대상·동작을 각각 후보에서 고르게 한다(둘 다 커밋 후 확인). decoy는 다른 시나리오의
+# 그럴듯한 {대상, 동작}(주로 커맨드 R/A 쌍)을 후보 풀에 섞는 재료가 된다.
 # 흐름/역할은 3GPP TS 24.229(IMS SIP 절차)·TS 29.228(Cx)에 대조 검증함.
 
 - id: ims-0001
@@ -8,26 +9,27 @@
   topic: IMS
   difficulty: basic
   tags: [message-flow, concept]
-  question: "단말이 IMS에 처음 등록될 때(핸드폰이 IMS에 올라올 때)의 전체 절차를 순서대로
-    맞춰라. (관련 없는 단계가 섞여 있음)"
+  question: "단말이 IMS에 처음 등록될 때(핸드폰이 IMS에 올라올 때)의 전체 절차를, 각 단계의
+    대상과 동작을 골라 순서대로 완성하라."
   steps:
-    - "P-CSCF 발견 — 접속 시 단말이 P-CSCF 주소를 확보"
-    - "REGISTER 전달: UE → P-CSCF → I-CSCF"
-    - "I-CSCF ↔ HSS: UAR/UAA (Cx) — 등록 인가받고 S-CSCF 선택"
-    - "I-CSCF → S-CSCF 로 REGISTER 전달"
-    - "S-CSCF ↔ HSS: MAR/MAA (Cx) — 인증 벡터 획득"
-    - "S-CSCF → UE: 401 인증 챌린지"
-    - "UE → S-CSCF: 자격증명 담아 재-REGISTER"
-    - "S-CSCF ↔ HSS: SAR/SAA (Cx) — 서버 할당·사용자 프로필 다운로드"
-    - "S-CSCF → UE: 200 OK (등록 완료)"
+    - {actor: "단말(UE)", act: "P-CSCF 발견 (주소 확보)"}
+    - {actor: "UE → P-CSCF → I-CSCF", act: "REGISTER 전달"}
+    - {actor: "I-CSCF ↔ HSS", act: "UAR/UAA (Cx) — 등록 인가·S-CSCF 선택"}
+    - {actor: "I-CSCF → S-CSCF", act: "REGISTER 전달"}
+    - {actor: "S-CSCF ↔ HSS", act: "MAR/MAA (Cx) — 인증 벡터 획득"}
+    - {actor: "S-CSCF → UE", act: "401 인증 챌린지"}
+    - {actor: "UE → S-CSCF", act: "재-REGISTER (자격증명 포함)"}
+    - {actor: "S-CSCF ↔ HSS", act: "SAR/SAA (Cx) — 서버 할당·프로필 다운로드"}
+    - {actor: "S-CSCF → UE", act: "200 OK (등록 완료)"}
   decoys:
-    - "I-CSCF ↔ HSS: LIR/LIA (Cx) — 서빙 S-CSCF 조회"
-    - "P-CSCF ↔ PCRF: AAR/AAA (Rx) — 미디어 자원 인가"
+    - {actor: "I-CSCF ↔ HSS", act: "LIR/LIA (Cx) — 서빙 S-CSCF 조회"}
+    - {actor: "P-CSCF ↔ PCRF", act: "AAR/AAA (Rx) — 미디어 자원 인가"}
   explain: |
-    IMS 등록은 SIP REGISTER 전달(UE→P-CSCF→I-CSCF→S-CSCF)에 Cx가 세 번 맞물린다:
+    등록은 SIP REGISTER 전달(UE→P-CSCF→I-CSCF→S-CSCF)에 Cx가 세 번 맞물린다:
     I-CSCF의 UAR(S-CSCF 선택) → S-CSCF의 MAR(인증 벡터, 401 챌린지) → 재등록 후
-    S-CSCF의 SAR(서버 할당·프로필). LIR/LIA는 착신 라우팅용, AAR/AAA(Rx)는 세션
-    설정 시 미디어 인가용이라 등록 절차에는 끼지 않는다(그래서 decoy).
+    S-CSCF의 SAR(서버 할당·프로필). 대상 축에서 UAR는 I-CSCF↔HSS, MAR·SAR는
+    S-CSCF↔HSS라는 게 자주 헷갈리는 포인트. LIR/LIA(착신), AAR/AAA(Rx 미디어)는
+    등록 절차가 아니라 decoy.
   ref: "3GPP TS 24.229; TS 29.228 (등록 흐름)"
 
 - id: ims-0002
@@ -35,24 +37,25 @@
   topic: IMS
   difficulty: basic
   tags: [message-flow, concept]
-  question: "다른 사람이 이 IMS 가입자에게 전화를 걸었을 때(착신, terminating)의 전체 절차를
-    순서대로 맞춰라. (관련 없는 단계가 섞여 있음)"
+  question: "다른 사람이 이 IMS 가입자에게 전화를 걸었을 때(착신, terminating)의 전체 절차를,
+    각 단계의 대상과 동작을 골라 순서대로 완성하라."
   steps:
-    - "착신자 홈망 I-CSCF 로 INVITE 도착 (DNS/ENUM 라우팅)"
-    - "I-CSCF ↔ HSS: LIR/LIA (Cx) — 서빙 S-CSCF 조회"
-    - "I-CSCF → S-CSCF 로 INVITE 전달"
-    - "S-CSCF: 착신 서비스 로직(iFC) 적용 — 필요시 AS 경유"
-    - "S-CSCF → P-CSCF → UE 로 INVITE 전달"
-    - "P-CSCF ↔ PCRF: AAR/AAA (Rx) — 미디어 자원 인가"
-    - "180 Ringing → 200 OK → ACK (호 설정 완료)"
+    - {actor: "발신망 → I-CSCF", act: "INVITE 도착 (DNS/ENUM 라우팅)"}
+    - {actor: "I-CSCF ↔ HSS", act: "LIR/LIA (Cx) — 서빙 S-CSCF 조회"}
+    - {actor: "I-CSCF → S-CSCF", act: "INVITE 전달"}
+    - {actor: "S-CSCF", act: "착신 서비스(iFC) 적용 — 필요시 AS 경유"}
+    - {actor: "S-CSCF → P-CSCF → UE", act: "INVITE 전달"}
+    - {actor: "P-CSCF ↔ PCRF", act: "AAR/AAA (Rx) — 미디어 자원 인가"}
+    - {actor: "UE ↔ 발신자", act: "180 → 200 → ACK (호 설정 완료)"}
   decoys:
-    - "I-CSCF ↔ HSS: UAR/UAA (Cx) — 등록 인가"
-    - "S-CSCF ↔ HSS: SAR/SAA (Cx) — 서버 할당"
+    - {actor: "I-CSCF ↔ HSS", act: "UAR/UAA (Cx) — 등록 인가"}
+    - {actor: "S-CSCF ↔ HSS", act: "SAR/SAA (Cx) — 서버 할당"}
   explain: |
     착신 INVITE를 받은 I-CSCF는 서빙 S-CSCF를 모르므로 LIR/LIA로 HSS에 조회해
     라우팅한다. S-CSCF가 착신 서비스(iFC)를 적용해 UE로 전달하고, 미디어는 Rx의
-    AAR/AAA로 인가된다. UAR/SAR는 "등록" 절차의 커맨드라 착신에는 끼지 않는다
-    (그래서 decoy). 발신 등록의 UAR과 착신 조회의 LIR 구분이 핵심.
+    AAR/AAA로 인가된다. UAR·SAR는 "등록" 절차의 커맨드라 착신엔 끼지 않는 decoy.
+    발신 등록의 UAR와 착신 조회의 LIR가 둘 다 I-CSCF↔HSS라 대상만으론 못 가리고
+    동작으로 구분해야 한다.
   ref: "3GPP TS 24.229; TS 29.228 (착신 흐름)"
 
 - id: ims-0003
@@ -60,21 +63,21 @@
   topic: IMS
   difficulty: advanced
   tags: [message-flow, concept]
-  question: "등록을 마친 IMS 가입자가 전화를 걸 때(발신, originating)의 전체 절차를 순서대로
-    맞춰라. (관련 없는 단계가 섞여 있음)"
+  question: "등록을 마친 IMS 가입자가 전화를 걸 때(발신, originating)의 전체 절차를, 각 단계의
+    대상과 동작을 골라 순서대로 완성하라."
   steps:
-    - "UE → P-CSCF: INVITE"
-    - "P-CSCF → S-CSCF (등록 시 받은 Service-Route 경로로 전달)"
-    - "S-CSCF: 발신 서비스 로직(iFC) 적용 — 필요시 AS 경유"
-    - "S-CSCF → 상대망(I-CSCF/BGCF 경유)으로 INVITE 라우팅"
-    - "P-CSCF ↔ PCRF: AAR/AAA (Rx) — 미디어 자원 인가"
-    - "180 Ringing → 200 OK → ACK (호 설정 완료)"
+    - {actor: "UE → P-CSCF", act: "INVITE"}
+    - {actor: "P-CSCF → S-CSCF", act: "INVITE 전달 (Service-Route 경로)"}
+    - {actor: "S-CSCF", act: "발신 서비스(iFC) 적용 — 필요시 AS 경유"}
+    - {actor: "S-CSCF → 상대망", act: "INVITE 라우팅 (I-CSCF/BGCF 경유)"}
+    - {actor: "P-CSCF ↔ PCRF", act: "AAR/AAA (Rx) — 미디어 자원 인가"}
+    - {actor: "UE ↔ 상대", act: "180 → 200 → ACK (호 설정 완료)"}
   decoys:
-    - "I-CSCF ↔ HSS: LIR/LIA (Cx) — 서빙 S-CSCF 조회"
-    - "S-CSCF ↔ HSS: MAR/MAA (Cx) — 인증 벡터 획득"
+    - {actor: "I-CSCF ↔ HSS", act: "LIR/LIA (Cx) — 서빙 S-CSCF 조회"}
+    - {actor: "S-CSCF ↔ HSS", act: "MAR/MAA (Cx) — 인증 벡터 획득"}
   explain: |
     발신은 P-CSCF가 등록 때 받은 Service-Route를 따라 사용자의 S-CSCF로 INVITE를
     보내는 것이 출발점이다. S-CSCF가 발신 서비스(iFC)를 적용해 상대망으로 라우팅하고,
     미디어는 Rx의 AAR/AAA로 인가된다(프리컨디션 기반이면 알림 전에 자원 확보). LIR는
-    착신 라우팅, MAR는 등록 인증 커맨드라 발신에는 끼지 않는다(그래서 decoy).
+    착신 라우팅, MAR는 등록 인증 커맨드라 발신엔 끼지 않는 decoy.
   ref: "3GPP TS 24.229 (발신 흐름); TS 29.214 (Rx)"

@@ -151,18 +151,16 @@ def validate(questions):
                     _check_order_items(errors, loc, "decoys", decoys)
         elif qtype == "steps":
             steps = q.get("steps")
-            if not isinstance(steps, list) or len(steps) < 2 \
-                    or not all(str(s).strip() for s in steps):
-                errors.append(
-                    f"[{loc}] steps가 없거나 2개 미만이거나 빈 항목 포함 (문자열 리스트)"
-                )
+            if not isinstance(steps, list) or len(steps) < 2:
+                errors.append(f"[{loc}] steps가 없거나 2개 미만")
+            else:
+                _check_steps_items(errors, loc, "steps", steps)
             decoys = q.get("decoys")
             if decoys is not None:
-                if not isinstance(decoys, list) or len(decoys) == 0 \
-                        or not all(str(s).strip() for s in decoys):
-                    errors.append(
-                        f"[{loc}] steps decoys가 비어있지 않은 문자열 리스트가 아님"
-                    )
+                if not isinstance(decoys, list) or len(decoys) == 0:
+                    errors.append(f"[{loc}] steps decoys가 비어있지 않은 리스트가 아님")
+                else:
+                    _check_steps_items(errors, loc, "decoys", decoys)
 
     return errors
 
@@ -177,6 +175,16 @@ def _check_order_items(errors, loc, field, items):
                 errors.append(f"[{loc}] {field}[{i}].{key} 비어있음")
         if item.get("from") and item.get("from") == item.get("to"):
             errors.append(f"[{loc}] {field}[{i}] from/to가 동일함")
+
+
+def _check_steps_items(errors, loc, field, items):
+    for i, item in enumerate(items):
+        if not isinstance(item, dict):
+            errors.append(f"[{loc}] {field}[{i}]가 매핑이 아님 (actor/act 필요)")
+            continue
+        for key in ("actor", "act"):
+            if not str(item.get(key, "")).strip():
+                errors.append(f"[{loc}] {field}[{i}].{key} 비어있음")
 
 
 def main():

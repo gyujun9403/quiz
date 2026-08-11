@@ -124,15 +124,17 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
     - {msg: "INVITE", from: "발신자", to: "착신자"}
     - {msg: "100 Trying", from: "착신자", to: "발신자"}
   ```
-- `steps`→ 방향/다이어그램 **없이** 단계 이름만 순서대로 맞추는 절차-순서 타입. `steps`가
-  **정답 순서 그대로**의 문자열 배열. actor가 5개 이상이라 시퀀스 다이어그램이 폰에서
-  무너지는 **end-to-end 서사**(IMS 등록/착신/발신 등)를 표현할 때 쓴다. HTML은 칩을
-  순서대로 탭해 번호 목록으로 쌓고(담은 항목 재탭 시 제거), 채점은 순서만 본다. reveal은
-  `buildStepsList`로 정답 순서를 보여준다.
+- `steps`→ 시퀀스 다이어그램이 폰에서 무너지는(5+ actor) **end-to-end 서사**(IMS 등록/착신/
+  발신 등)용. `steps`는 **정답 순서 그대로**의 `{actor, act}` 배열 — `actor`는 대상(누가↔누구),
+  `act`는 동작(무엇). HTML은 **"다음 단계는?" 워크스루**로 렌더한다: 위에서부터 단계를 하나씩
+  쌓으며(읽기 전용 기록), 매 단계 **대상·동작을 각각 후보에서 하나씩** 고른다. 둘 다 커밋한
+  뒤 확인(교차 힌트 방지). 틀리면 정답을 초록으로 공개하고 계속 진행(끝까지 서사를 봄),
+  실수가 하나라도 있으면 최종 판정은 오답. 각 칸 후보는 그 문제의 `steps`+`decoys`에서
+  뽑은 대상/동작 풀에서 정답+오답 3개를 샘플링. reveal은 `buildStepsList`로 전체 흐름 요약.
   ```yaml
   steps:
-    - "P-CSCF 발견 — 접속 시 단말이 P-CSCF 주소 확보"
-    - "REGISTER 전달: UE → P-CSCF → I-CSCF"
+    - {actor: "I-CSCF ↔ HSS", act: "UAR/UAA (Cx) — 등록 인가·S-CSCF 선택"}
+    - {actor: "S-CSCF ↔ HSS", act: "MAR/MAA (Cx) — 인증 벡터 획득"}
   ```
 
 ### `decoys` — 오답 조각 (order/steps 공통, 선택 필드)
@@ -179,7 +181,7 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 - `ox`: `answer`가 불리언인지.
 - `short`: `answer`가 비어있지 않은 리스트인지.
 - `order`: `items`가 2개 이상인지. `decoys`(있으면) 각 항목이 `{msg,from,to}` 구조인지.
-- `steps`: `steps`가 2개 이상 문자열인지. `decoys`(있으면) 비어있지 않은 문자열 리스트인지.
+- `steps`: `steps`가 2개 이상이고 각 항목이 `{actor, act}` 구조인지. `decoys`(있으면)도 동일 구조.
 - `id` 중복 여부, ID 형식(접두어-숫자).
 - `ref`가 비어있지 않은지 (필수).
 - `topic`이 허용 목록 안인지. 벗어나면 거부.
@@ -287,6 +289,11 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
   발신(ims-0003) 전체 흐름. SIP REGISTER/INVITE 전달에 Cx(UAR/MAR/SAR, LIR)·Rx(AAR)가
   어디서 맞물리는지를 한 서사로 꿰고, 다른 시나리오 커맨드 쌍을 decoy로. TS 24.229/29.228
   대조. 총 73문제(SIP 46 / Diameter 24 / IMS 3). '순서맞추기' 필터는 order+steps 모두 포함.
+- [x] **steps를 "다음 단계는?" 두-칸 워크스루로 리뉴얼** (피드백: 통째 정렬은 학습 약하고
+  UI가 비직관적). 각 단계를 `{actor(대상), act(동작)}`로 구조화해, 매 단계 대상·동작을
+  각각 후보에서 고르게(둘 다 커밋 후 확인 — 교차 힌트 방지). 대상 축이 "LIR는 I-CSCF↔HSS,
+  MAR는 S-CSCF↔HSS" 같은 노드 혼동을, 동작 축이 커맨드 혼동을 따로 짚는다. 틀리면 정답
+  공개 후 끝까지 진행, 실수 있으면 오답. ims.yaml 3개를 `{actor, act}`로 재작성.
 
 ## 지금 열린 항목 (다음 작업)
 

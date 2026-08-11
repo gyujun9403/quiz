@@ -171,6 +171,7 @@ TEMPLATE = r"""<!doctype html>
     display: inline-block;
     width: auto;
   }
+  button.opt.chip.sel { background: var(--accent-bg); border-color: var(--accent); color: var(--accent); font-weight: 600; }
   button.opt.correct { background: var(--good-bg); color: var(--good-fg); border-color: var(--good-fg); }
   button.opt.wrong { background: var(--bad-bg); color: var(--bad-fg); border-color: var(--bad-fg); }
   button.opt:disabled { cursor: default; opacity: 1; }
@@ -652,94 +653,101 @@ TEMPLATE = r"""<!doctype html>
     elAnswerArea.appendChild(submit);
   }
 
-  // 정답 단계 목록을 번호 매긴 읽기 전용 노드로. steps 채점 후 reveal에서 재사용.
+  // 정답 흐름을 "[대상] 동작" 번호 목록으로. steps reveal에서 재사용.
   function buildStepsList(steps) {
     var wrap = el("div", { cls: "steps-list steps-reveal" });
     steps.forEach(function (s, i) {
-      wrap.appendChild(el("div", { cls: "steps-row", text: (i + 1) + ". " + s }));
+      wrap.appendChild(el("div", { cls: "steps-row", text: (i + 1) + ". [" + s.actor + "]  " + s.act }));
     });
     return wrap;
   }
 
-  // 절차-순서(steps): 방향/다이어그램 없이 단계 이름만 순서대로. decoy 섞임 가능.
+  // 절차-순서(steps): 서사를 위에서부터 한 단계씩 쌓으며 매 단계 "대상 + 동작"을 각각
+  // 후보에서 고른다(둘 다 커밋 후 확인 — 교차 힌트 방지). 틀리면 정답 공개 후 계속 진행.
   function renderSteps(q) {
-    var decoys = q.decoys || [];
-    var poolItems = q.steps.map(function (s, i) { return { label: s, uid: i }; })
-      .concat(decoys.map(function (s, k) { return { label: s, uid: "d" + k }; }));
-    var pool = shuffle(poolItems);
-    var poolEl = el("div", { cls: "order-pool" });
-    var answerEl = el("div", { cls: "order-answer" });
-    var chosen = [];
+    var steps = q.steps;
+    var all = steps.concat(q.decoys || []);
+    var actorPool = [];
+    var actPool = [];
+    all.forEach(function (s) {
+      if (actorPool.indexOf(s.actor) === -1) actorPool.push(s.actor);
+      if (actPool.indexOf(s.act) === -1) actPool.push(s.act);
+    });
+    var k = 0, mistakes = 0;
 
-    function renderPool() {
-      poolEl.innerHTML = "";
-      pool.forEach(function (p) {
-        if (chosen.some(function (c) { return c.uid === p.uid; })) return;
-        var btn = el("button", { cls: "opt chip", text: p.label });
-        btn.addEventListener("click", function () {
-          if (answered) return;
-          chosen.push({ uid: p.uid, label: p.label });
-          renderPool();
-          renderAnswer();
-        });
-        poolEl.appendChild(btn);
+    function optionsFor(pool, correct) {
+      var others = shuffle(pool.filter(function (x) { return x !== correct; })).slice(0, 3);
+      return shuffle(others.concat([correct]));
+    }
+
+    function markSel(row, btn) {
+      Array.prototype.forEach.call(row.children, function (b) { b.classList.remove("sel"); });
+      btn.classList.add("sel");
+    }
+
+    function gradeRow(row, correctVal, selVal) {
+      Array.prototype.forEach.call(row.children, function (b) {
+        b.classList.remove("sel");
+        b.disabled = true;
+        if (b.textContent === correctVal) b.classList.add("correct");
+        else if (b.textContent === selVal) b.classList.add("wrong");
       });
     }
 
-    function renderAnswer() {
-      answerEl.innerHTML = "";
-      if (chosen.length === 0) {
-        answerEl.appendChild(el("div", {
-          cls: "order-placeholder",
-          text: "위에서 순서대로 탭 → 담은 단계를 다시 탭하면 제거"
-        }));
-        return;
+    function buildChoiceRow(pool, correct, onPick) {
+      var row = el("div", { cls: "order-pool" });
+      optionsFor(pool, correct).forEach(function (v) {
+        var b = el("button", { cls: "opt chip", text: v });
+        b.addEventListener("click", function () {
+          if (b.disabled) return;
+          markSel(row, b);
+          onPick(v);
+        });
+        row.appendChild(b);
+      });
+      return row;
+    }
+
+    function renderStep() {
+      elAnswerArea.innerHTML = "";
+      if (k > 0) {
+        elAnswerArea.appendChild(el("div", { cls: "order-label", text: "지금까지" }));
+        elAnswerArea.appendChild(buildStepsList(steps.slice(0, k)));
       }
-      var list = el("div", { cls: "steps-list" });
-      chosen.forEach(function (entry, idx) {
-        var row = el("button", { cls: "steps-row", text: (idx + 1) + ". " + entry.label });
-        row.addEventListener("click", function () {
-          if (answered) return;
-          chosen.splice(idx, 1);
-          renderPool();
-          renderAnswer();
+      var cur = steps[k];
+      var selActor = null, selAct = null;
+
+      elAnswerArea.appendChild(el("div", { cls: "order-label", text: (k + 1) + "번째 단계 — 대상(누가↔누구)?" }));
+      var actorRow = buildChoiceRow(actorPool, cur.actor, function (v) { selActor = v; refresh(); });
+      elAnswerArea.appendChild(actorRow);
+
+      elAnswerArea.appendChild(el("div", { cls: "order-label", text: "동작(무엇)?" }));
+      var actRow = buildChoiceRow(actPool, cur.act, function (v) { selAct = v; refresh(); });
+      elAnswerArea.appendChild(actRow);
+
+      var submit = el("button", { cls: "primary", text: "확인" });
+      submit.disabled = true;
+      function refresh() { submit.disabled = !(selActor && selAct); }
+
+      submit.addEventListener("click", function () {
+        if (submit.disabled) return;
+        gradeRow(actorRow, cur.actor, selActor);
+        gradeRow(actRow, cur.act, selAct);
+        if (selActor !== cur.actor || selAct !== cur.act) mistakes++;
+        submit.remove();
+        var last = (k === steps.length - 1);
+        var next = el("button", { cls: "primary", text: last ? "결과 보기" : "다음 단계" });
+        next.addEventListener("click", function () {
+          k++;
+          if (k < steps.length) renderStep();
+          else showFeedback(mistakes === 0, q.explain, q.ref, buildStepsList(steps));
         });
-        list.appendChild(row);
+        elAnswerArea.appendChild(next);
       });
-      answerEl.appendChild(list);
+      elAnswerArea.appendChild(submit);
     }
 
-    var resetBtn = el("button", { cls: "order-reset", text: "↺ 처음부터" });
-    resetBtn.addEventListener("click", function () {
-      if (answered) return;
-      chosen = [];
-      renderPool();
-      renderAnswer();
-    });
-
-    var submit = el("button", { cls: "primary", text: "확인" });
-    submit.addEventListener("click", function () {
-      if (answered) return;
-      if (chosen.length === 0) return;
-      var isCorrect = chosen.length === q.steps.length && chosen.every(function (entry, i) {
-        return entry.uid === i;
-      });
-      submit.disabled = true;
-      showFeedback(isCorrect, q.explain, q.ref, buildStepsList(q.steps));
-    });
-
-    renderPool();
-    renderAnswer();
-
-    var poolLabel = decoys.length
-      ? "탭해서 순서대로 선택 (관련 없는 오답 단계가 섞여 있음)"
-      : "탭해서 순서대로 선택";
-    elAnswerArea.appendChild(el("div", { cls: "order-label", text: poolLabel }));
-    elAnswerArea.appendChild(poolEl);
-    elAnswerArea.appendChild(el("div", { cls: "order-label", text: "내 답안 (탭하면 제거)" }));
-    elAnswerArea.appendChild(answerEl);
-    elAnswerArea.appendChild(resetBtn);
-    elAnswerArea.appendChild(submit);
+    renderStep();
   }
 
   function render(q) {

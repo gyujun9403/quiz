@@ -1,8 +1,10 @@
 # IMS end-to-end 절차 서사 (SIP + Diameter 통합). 실제 이벤트별 "전체 흐름" 암기용.
-# steps 타입: 각 단계를 {actor(대상), act(동작)} 두 축으로 나눠, 워크스루에서 매 단계
-# 대상·동작을 각각 후보에서 고르게 한다(둘 다 커밋 후 확인). decoy는 다른 시나리오의
-# 그럴듯한 {대상, 동작}(주로 커맨드 R/A 쌍)을 후보 풀에 섞는 재료가 된다.
-# 흐름/역할은 3GPP TS 24.229(IMS SIP 절차)·TS 29.228(Cx)에 대조 검증함.
+# steps 타입: 각 단계는 {from, to, act} 화살표. 워크스루에서 매 단계 대상(from→to)과
+# 동작(act)을 각각 후보에서 고르면 시퀀스 다이어그램에 화살표가 그려지며 쌓인다.
+# actors: lifeline(레인) 좌→우 순서 고정. decoy는 다른 시나리오의 {from,to,act}(주로
+# 커맨드)로 오답 보기 풀을 채운다(그려지진 않음).
+# 흐름/역할은 3GPP TS 24.229(IMS SIP 절차)·TS 29.228(Cx)에 대조. 커맨드 쌍(예: UAR/UAA)은
+# 화살표 하나로 압축 표기하고, 내부 처리(iFC 등)·릴레이 세부는 explain에 둔다.
 
 - id: ims-0001
   type: steps
@@ -10,26 +12,27 @@
   difficulty: basic
   tags: [message-flow, concept]
   question: "단말이 IMS에 처음 등록될 때(핸드폰이 IMS에 올라올 때)의 전체 절차를, 각 단계의
-    대상과 동작을 골라 순서대로 완성하라."
+    대상(누가→누구)과 동작을 골라 순서대로 완성하라."
+  actors: ["UE", "P-CSCF", "I-CSCF", "S-CSCF", "HSS"]
   steps:
-    - {actor: "단말(UE)", act: "P-CSCF 발견 (주소 확보)"}
-    - {actor: "UE → P-CSCF → I-CSCF", act: "REGISTER 전달"}
-    - {actor: "I-CSCF ↔ HSS", act: "UAR/UAA (Cx) — 등록 인가·S-CSCF 선택"}
-    - {actor: "I-CSCF → S-CSCF", act: "REGISTER 전달"}
-    - {actor: "S-CSCF ↔ HSS", act: "MAR/MAA (Cx) — 인증 벡터 획득"}
-    - {actor: "S-CSCF → UE", act: "401 인증 챌린지"}
-    - {actor: "UE → S-CSCF", act: "재-REGISTER (자격증명 포함)"}
-    - {actor: "S-CSCF ↔ HSS", act: "SAR/SAA (Cx) — 서버 할당·프로필 다운로드"}
-    - {actor: "S-CSCF → UE", act: "200 OK (등록 완료)"}
+    - {from: "UE", to: "P-CSCF", act: "REGISTER"}
+    - {from: "P-CSCF", to: "I-CSCF", act: "REGISTER"}
+    - {from: "I-CSCF", to: "HSS", act: "UAR/UAA"}
+    - {from: "I-CSCF", to: "S-CSCF", act: "REGISTER"}
+    - {from: "S-CSCF", to: "HSS", act: "MAR/MAA"}
+    - {from: "S-CSCF", to: "UE", act: "401 챌린지"}
+    - {from: "UE", to: "S-CSCF", act: "재-REGISTER"}
+    - {from: "S-CSCF", to: "HSS", act: "SAR/SAA"}
+    - {from: "S-CSCF", to: "UE", act: "200 OK"}
   decoys:
-    - {actor: "I-CSCF ↔ HSS", act: "LIR/LIA (Cx) — 서빙 S-CSCF 조회"}
-    - {actor: "P-CSCF ↔ PCRF", act: "AAR/AAA (Rx) — 미디어 자원 인가"}
+    - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}
+    - {from: "P-CSCF", to: "PCRF", act: "AAR/AAA"}
   explain: |
-    등록은 SIP REGISTER 전달(UE→P-CSCF→I-CSCF→S-CSCF)에 Cx가 세 번 맞물린다:
-    I-CSCF의 UAR(S-CSCF 선택) → S-CSCF의 MAR(인증 벡터, 401 챌린지) → 재등록 후
-    S-CSCF의 SAR(서버 할당·프로필). 대상 축에서 UAR는 I-CSCF↔HSS, MAR·SAR는
-    S-CSCF↔HSS라는 게 자주 헷갈리는 포인트. LIR/LIA(착신), AAR/AAA(Rx 미디어)는
-    등록 절차가 아니라 decoy.
+    등록은 SIP REGISTER 릴레이(UE→P-CSCF→I-CSCF→S-CSCF)에 Cx가 세 번 맞물린다:
+    I-CSCF의 UAR/UAA(S-CSCF 선택) → S-CSCF의 MAR/MAA(인증 벡터→401 챌린지) → 재등록 후
+    S-CSCF의 SAR/SAA(서버 할당·프로필). 대상 축에서 UAR는 I-CSCF↔HSS, MAR·SAR는
+    S-CSCF↔HSS라는 점이 핵심. LIR/LIA(착신)·AAR/AAA(Rx 미디어)는 등록에 없어 decoy다.
+    (401/200은 실제로는 I-CSCF·P-CSCF를 거쳐 UE로 가지만 여기선 S-CSCF↔UE로 압축.)
   ref: "3GPP TS 24.229; TS 29.228 (등록 흐름)"
 
 - id: ims-0002
@@ -39,23 +42,22 @@
   tags: [message-flow, concept]
   question: "다른 사람이 이 IMS 가입자에게 전화를 걸었을 때(착신, terminating)의 전체 절차를,
     각 단계의 대상과 동작을 골라 순서대로 완성하라."
+  actors: ["발신자", "I-CSCF", "HSS", "S-CSCF", "UE"]
   steps:
-    - {actor: "발신망 → I-CSCF", act: "INVITE 도착 (DNS/ENUM 라우팅)"}
-    - {actor: "I-CSCF ↔ HSS", act: "LIR/LIA (Cx) — 서빙 S-CSCF 조회"}
-    - {actor: "I-CSCF → S-CSCF", act: "INVITE 전달"}
-    - {actor: "S-CSCF", act: "착신 서비스(iFC) 적용 — 필요시 AS 경유"}
-    - {actor: "S-CSCF → P-CSCF → UE", act: "INVITE 전달"}
-    - {actor: "P-CSCF ↔ PCRF", act: "AAR/AAA (Rx) — 미디어 자원 인가"}
-    - {actor: "UE ↔ 발신자", act: "180 → 200 → ACK (호 설정 완료)"}
+    - {from: "발신자", to: "I-CSCF", act: "INVITE"}
+    - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}
+    - {from: "I-CSCF", to: "S-CSCF", act: "INVITE"}
+    - {from: "S-CSCF", to: "UE", act: "INVITE"}
+    - {from: "UE", to: "발신자", act: "180/200/ACK"}
   decoys:
-    - {actor: "I-CSCF ↔ HSS", act: "UAR/UAA (Cx) — 등록 인가"}
-    - {actor: "S-CSCF ↔ HSS", act: "SAR/SAA (Cx) — 서버 할당"}
+    - {from: "I-CSCF", to: "HSS", act: "UAR/UAA"}
+    - {from: "S-CSCF", to: "HSS", act: "SAR/SAA"}
   explain: |
-    착신 INVITE를 받은 I-CSCF는 서빙 S-CSCF를 모르므로 LIR/LIA로 HSS에 조회해
-    라우팅한다. S-CSCF가 착신 서비스(iFC)를 적용해 UE로 전달하고, 미디어는 Rx의
-    AAR/AAA로 인가된다. UAR·SAR는 "등록" 절차의 커맨드라 착신엔 끼지 않는 decoy.
-    발신 등록의 UAR와 착신 조회의 LIR가 둘 다 I-CSCF↔HSS라 대상만으론 못 가리고
-    동작으로 구분해야 한다.
+    착신망의 진입점 I-CSCF가 INVITE를 받으면 서빙 S-CSCF를 모르므로 LIR/LIA로 HSS에
+    조회해 라우팅한다. S-CSCF가 착신 서비스(iFC)를 적용해 UE로 전달하고 호가 설정된다.
+    UAR·SAR는 "등록" 커맨드라 착신엔 없어 decoy. 착신 조회 LIR와 등록 인가 UAR가 둘 다
+    I-CSCF↔HSS라 대상만으론 못 가리고 동작으로 구분해야 한다. (P-CSCF 릴레이·미디어
+    인가(Rx AAR)는 이 다이어그램에선 생략 — S-CSCF↔UE로 압축.)
   ref: "3GPP TS 24.229; TS 29.228 (착신 흐름)"
 
 - id: ims-0003
@@ -65,19 +67,20 @@
   tags: [message-flow, concept]
   question: "등록을 마친 IMS 가입자가 전화를 걸 때(발신, originating)의 전체 절차를, 각 단계의
     대상과 동작을 골라 순서대로 완성하라."
+  actors: ["UE", "P-CSCF", "PCRF", "S-CSCF", "상대망"]
   steps:
-    - {actor: "UE → P-CSCF", act: "INVITE"}
-    - {actor: "P-CSCF → S-CSCF", act: "INVITE 전달 (Service-Route 경로)"}
-    - {actor: "S-CSCF", act: "발신 서비스(iFC) 적용 — 필요시 AS 경유"}
-    - {actor: "S-CSCF → 상대망", act: "INVITE 라우팅 (I-CSCF/BGCF 경유)"}
-    - {actor: "P-CSCF ↔ PCRF", act: "AAR/AAA (Rx) — 미디어 자원 인가"}
-    - {actor: "UE ↔ 상대", act: "180 → 200 → ACK (호 설정 완료)"}
+    - {from: "UE", to: "P-CSCF", act: "INVITE"}
+    - {from: "P-CSCF", to: "S-CSCF", act: "INVITE"}
+    - {from: "S-CSCF", to: "상대망", act: "INVITE"}
+    - {from: "P-CSCF", to: "PCRF", act: "AAR/AAA"}
+    - {from: "상대망", to: "UE", act: "180/200/ACK"}
   decoys:
-    - {actor: "I-CSCF ↔ HSS", act: "LIR/LIA (Cx) — 서빙 S-CSCF 조회"}
-    - {actor: "S-CSCF ↔ HSS", act: "MAR/MAA (Cx) — 인증 벡터 획득"}
+    - {from: "I-CSCF", to: "HSS", act: "LIR/LIA"}
+    - {from: "S-CSCF", to: "HSS", act: "MAR/MAA"}
   explain: |
-    발신은 P-CSCF가 등록 때 받은 Service-Route를 따라 사용자의 S-CSCF로 INVITE를
-    보내는 것이 출발점이다. S-CSCF가 발신 서비스(iFC)를 적용해 상대망으로 라우팅하고,
-    미디어는 Rx의 AAR/AAA로 인가된다(프리컨디션 기반이면 알림 전에 자원 확보). LIR는
-    착신 라우팅, MAR는 등록 인증 커맨드라 발신엔 끼지 않는 decoy.
+    발신은 P-CSCF가 등록 때 받은 Service-Route를 따라 사용자의 S-CSCF로 INVITE를 보내는
+    것이 출발점이다. S-CSCF가 발신 서비스(iFC)를 적용해 상대망으로 라우팅하고, 미디어는
+    Rx의 AAR/AAA로 P-CSCF↔PCRF에서 인가된다(프리컨디션이면 알림 전 자원 확보). LIR(착신
+    라우팅)·MAR(등록 인증)는 발신엔 없어 decoy. 2번째 INVITE는 등록 때 받은 Service-Route
+    경로라는 점이 발신의 출발 포인트다.
   ref: "3GPP TS 24.229 (발신 흐름); TS 29.214 (Rx)"

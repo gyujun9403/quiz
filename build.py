@@ -60,7 +60,7 @@ TEMPLATE = r"""<!doctype html>
   #app {
     width: 100%;
     max-width: 480px;
-    padding: 16px;
+    padding: 12px;
     padding-bottom: 48px;
   }
   header {
@@ -75,7 +75,7 @@ TEMPLATE = r"""<!doctype html>
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 14px;
-    padding: 18px;
+    padding: 14px;
   }
   .badges { margin-bottom: 10px; }
   .badge {
@@ -138,22 +138,6 @@ TEMPLATE = r"""<!doctype html>
     padding: 4px;
     cursor: pointer;
   }
-  .steps-list { display: flex; flex-direction: column; gap: 6px; }
-  .steps-row {
-    display: block;
-    width: 100%;
-    text-align: left;
-    font-size: 15px;
-    line-height: 1.4;
-    padding: 10px 12px;
-    border-radius: 8px;
-    border: 1px solid var(--border);
-    background: var(--card);
-    color: var(--fg);
-    cursor: pointer;
-  }
-  .steps-row:active { opacity: 0.7; }
-  .steps-reveal .steps-row { cursor: default; background: var(--good-bg); color: var(--good-fg); border-color: var(--good-fg); }
   button.opt {
     display: block;
     width: 100%;
@@ -219,8 +203,9 @@ TEMPLATE = r"""<!doctype html>
   .feedback .verdict.wrong { color: var(--bad-fg); }
   .feedback .explain { white-space: pre-wrap; line-height: 1.5; margin: 0 0 10px; }
   .feedback .ref { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
-  .diagram { position: relative; margin: 4px 0 18px; font-size: 12px; }
-  .diagram-header { position: relative; height: 30px; }
+  .diagram-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -2px; }
+  .diagram { position: relative; margin: 4px 0 14px; font-size: 11px; }
+  .diagram-header { position: relative; height: 28px; }
   .diagram-actor {
     position: absolute;
     top: 0;
@@ -229,7 +214,7 @@ TEMPLATE = r"""<!doctype html>
     background: var(--card);
     border: 1px solid var(--border);
     border-radius: 6px;
-    padding: 4px 10px;
+    padding: 3px 6px;
     font-weight: 700;
     color: var(--fg);
   }
@@ -501,7 +486,11 @@ TEMPLATE = r"""<!doctype html>
     });
 
     wrap.appendChild(body);
-    return wrap;
+    // actor가 많으면(4+) 폭을 확보하고, 폰에서 넘치면 가로 스크롤로 떨어지게 한다.
+    if (n >= 4) wrap.style.minWidth = (n * 66) + "px";
+    var scroller = el("div", { cls: "diagram-scroll" });
+    scroller.appendChild(wrap);
+    return scroller;
   }
 
   // 정답 순서/방향(q.items)을 읽기 전용 시퀀스 다이어그램으로 그린다. 채점 후 reveal에서만 쓴다.
@@ -653,24 +642,18 @@ TEMPLATE = r"""<!doctype html>
     elAnswerArea.appendChild(submit);
   }
 
-  // 정답 흐름을 "[대상] 동작" 번호 목록으로. steps reveal에서 재사용.
-  function buildStepsList(steps) {
-    var wrap = el("div", { cls: "steps-list steps-reveal" });
-    steps.forEach(function (s, i) {
-      wrap.appendChild(el("div", { cls: "steps-row", text: (i + 1) + ". [" + s.actor + "]  " + s.act }));
-    });
-    return wrap;
-  }
-
-  // 절차-순서(steps): 서사를 위에서부터 한 단계씩 쌓으며 매 단계 "대상 + 동작"을 각각
-  // 후보에서 고른다(둘 다 커밋 후 확인 — 교차 힌트 방지). 틀리면 정답 공개 후 계속 진행.
+  // 절차-순서(steps): 각 단계가 {from,to,act} 화살표. 위에서부터 한 단계씩 "대상(from→to)"과
+  // "동작(act)"을 각각 후보에서 고르면(둘 다 커밋 후 확인) 그 화살표가 시퀀스 다이어그램에
+  // 그려지며 쌓인다. 틀리면 정답 공개 후 계속 진행(끝까지 서사를 봄).
   function renderSteps(q) {
     var steps = q.steps;
-    var all = steps.concat(q.decoys || []);
-    var actorPool = [];
+    var extras = q.decoys || [];
+    var laneActors = q.actors || collectActors(steps);
+    var pairPool = [];
     var actPool = [];
-    all.forEach(function (s) {
-      if (actorPool.indexOf(s.actor) === -1) actorPool.push(s.actor);
+    steps.concat(extras).forEach(function (s) {
+      var pk = s.from + " → " + s.to;
+      if (pairPool.indexOf(pk) === -1) pairPool.push(pk);
       if (actPool.indexOf(s.act) === -1) actPool.push(s.act);
     });
     var k = 0, mistakes = 0;
@@ -708,18 +691,25 @@ TEMPLATE = r"""<!doctype html>
       return row;
     }
 
+    function diagramUpTo(n) {
+      var rows = steps.slice(0, n).map(function (s) {
+        return { msg: s.act, from: s.from, to: s.to };
+      });
+      return renderDiagram(laneActors, rows, null);
+    }
+
     function renderStep() {
       elAnswerArea.innerHTML = "";
-      if (k > 0) {
-        elAnswerArea.appendChild(el("div", { cls: "order-label", text: "지금까지" }));
-        elAnswerArea.appendChild(buildStepsList(steps.slice(0, k)));
-      }
-      var cur = steps[k];
-      var selActor = null, selAct = null;
+      elAnswerArea.appendChild(el("div", { cls: "order-label", text: "지금까지" }));
+      elAnswerArea.appendChild(diagramUpTo(k));
 
-      elAnswerArea.appendChild(el("div", { cls: "order-label", text: (k + 1) + "번째 단계 — 대상(누가↔누구)?" }));
-      var actorRow = buildChoiceRow(actorPool, cur.actor, function (v) { selActor = v; refresh(); });
-      elAnswerArea.appendChild(actorRow);
+      var cur = steps[k];
+      var curPair = cur.from + " → " + cur.to;
+      var selPair = null, selAct = null;
+
+      elAnswerArea.appendChild(el("div", { cls: "order-label", text: (k + 1) + "번째 단계 — 대상(누가→누구)?" }));
+      var pairRow = buildChoiceRow(pairPool, curPair, function (v) { selPair = v; refresh(); });
+      elAnswerArea.appendChild(pairRow);
 
       elAnswerArea.appendChild(el("div", { cls: "order-label", text: "동작(무엇)?" }));
       var actRow = buildChoiceRow(actPool, cur.act, function (v) { selAct = v; refresh(); });
@@ -727,20 +717,20 @@ TEMPLATE = r"""<!doctype html>
 
       var submit = el("button", { cls: "primary", text: "확인" });
       submit.disabled = true;
-      function refresh() { submit.disabled = !(selActor && selAct); }
+      function refresh() { submit.disabled = !(selPair && selAct); }
 
       submit.addEventListener("click", function () {
         if (submit.disabled) return;
-        gradeRow(actorRow, cur.actor, selActor);
+        gradeRow(pairRow, curPair, selPair);
         gradeRow(actRow, cur.act, selAct);
-        if (selActor !== cur.actor || selAct !== cur.act) mistakes++;
+        if (selPair !== curPair || selAct !== cur.act) mistakes++;
         submit.remove();
         var last = (k === steps.length - 1);
         var next = el("button", { cls: "primary", text: last ? "결과 보기" : "다음 단계" });
         next.addEventListener("click", function () {
           k++;
           if (k < steps.length) renderStep();
-          else showFeedback(mistakes === 0, q.explain, q.ref, buildStepsList(steps));
+          else showFeedback(mistakes === 0, q.explain, q.ref, diagramUpTo(steps.length));
         });
         elAnswerArea.appendChild(next);
       });

@@ -124,17 +124,20 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
     - {msg: "INVITE", from: "발신자", to: "착신자"}
     - {msg: "100 Trying", from: "착신자", to: "발신자"}
   ```
-- `steps`→ 시퀀스 다이어그램이 폰에서 무너지는(5+ actor) **end-to-end 서사**(IMS 등록/착신/
-  발신 등)용. `steps`는 **정답 순서 그대로**의 `{actor, act}` 배열 — `actor`는 대상(누가↔누구),
-  `act`는 동작(무엇). HTML은 **"다음 단계는?" 워크스루**로 렌더한다: 위에서부터 단계를 하나씩
-  쌓으며(읽기 전용 기록), 매 단계 **대상·동작을 각각 후보에서 하나씩** 고른다. 둘 다 커밋한
-  뒤 확인(교차 힌트 방지). 틀리면 정답을 초록으로 공개하고 계속 진행(끝까지 서사를 봄),
-  실수가 하나라도 있으면 최종 판정은 오답. 각 칸 후보는 그 문제의 `steps`+`decoys`에서
-  뽑은 대상/동작 풀에서 정답+오답 3개를 샘플링. reveal은 `buildStepsList`로 전체 흐름 요약.
+- `steps`→ end-to-end 서사(IMS 등록/착신/발신 등)용. `steps`는 **정답 순서 그대로**의
+  `{from, to, act}` 화살표 배열 — `from`/`to`는 노드, `act`는 동작(짧게: 커맨드 쌍은
+  `UAR/UAA`처럼 화살표 하나로 압축). `actors`(권장)로 lifeline 좌→우 순서를 고정한다.
+  HTML은 **다이어그램-성장 워크스루**로 렌더: 위에 시퀀스 다이어그램(`renderDiagram` 재사용)이
+  있고, 매 단계 **대상(from→to)·동작(act)을 각각 후보에서** 고른다. 둘 다 커밋 후 확인(교차
+  힌트 방지)하면 그 **화살표가 다이어그램에 그려지며 쌓인다**. 틀리면 정답을 초록으로 공개하고
+  계속 진행(끝까지 서사를 봄), 실수가 하나라도 있으면 최종 판정은 오답. 각 칸 후보는
+  `steps`+`decoys`의 대상/동작 풀에서 정답+오답 3개 샘플. 내부 처리(iFC 등)나 릴레이 세부는
+  화살표로 안 그리고 `explain`에 둔다. actor가 많으면 다이어그램은 가로 스크롤로 떨어진다.
   ```yaml
+  actors: ["UE", "P-CSCF", "I-CSCF", "S-CSCF", "HSS"]
   steps:
-    - {actor: "I-CSCF ↔ HSS", act: "UAR/UAA (Cx) — 등록 인가·S-CSCF 선택"}
-    - {actor: "S-CSCF ↔ HSS", act: "MAR/MAA (Cx) — 인증 벡터 획득"}
+    - {from: "I-CSCF", to: "HSS", act: "UAR/UAA"}
+    - {from: "S-CSCF", to: "HSS", act: "MAR/MAA"}
   ```
 
 ### `decoys` — 오답 조각 (order/steps 공통, 선택 필드)
@@ -181,7 +184,9 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 - `ox`: `answer`가 불리언인지.
 - `short`: `answer`가 비어있지 않은 리스트인지.
 - `order`: `items`가 2개 이상인지. `decoys`(있으면) 각 항목이 `{msg,from,to}` 구조인지.
-- `steps`: `steps`가 2개 이상이고 각 항목이 `{actor, act}` 구조인지. `decoys`(있으면)도 동일 구조.
+- `steps`: `steps`가 2개 이상이고 각 항목이 `{from, to, act}` 구조(from≠to)인지. `actors`
+  (있으면) 문자열 리스트이고 steps의 from/to가 그 안에 있는지. `decoys`(있으면)도 `{from,to,act}`
+  구조(decoy는 레인 밖 actor 참조 허용).
 - `id` 중복 여부, ID 형식(접두어-숫자).
 - `ref`가 비어있지 않은지 (필수).
 - `topic`이 허용 목록 안인지. 벗어나면 거부.
@@ -289,11 +294,15 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
   발신(ims-0003) 전체 흐름. SIP REGISTER/INVITE 전달에 Cx(UAR/MAR/SAR, LIR)·Rx(AAR)가
   어디서 맞물리는지를 한 서사로 꿰고, 다른 시나리오 커맨드 쌍을 decoy로. TS 24.229/29.228
   대조. 총 73문제(SIP 46 / Diameter 24 / IMS 3). '순서맞추기' 필터는 order+steps 모두 포함.
-- [x] **steps를 "다음 단계는?" 두-칸 워크스루로 리뉴얼** (피드백: 통째 정렬은 학습 약하고
-  UI가 비직관적). 각 단계를 `{actor(대상), act(동작)}`로 구조화해, 매 단계 대상·동작을
-  각각 후보에서 고르게(둘 다 커밋 후 확인 — 교차 힌트 방지). 대상 축이 "LIR는 I-CSCF↔HSS,
-  MAR는 S-CSCF↔HSS" 같은 노드 혼동을, 동작 축이 커맨드 혼동을 따로 짚는다. 틀리면 정답
-  공개 후 끝까지 진행, 실수 있으면 오답. ims.yaml 3개를 `{actor, act}`로 재작성.
+- [x] **steps를 두-칸 워크스루로 리뉴얼** (피드백: 통째 정렬은 학습 약하고 UI 비직관적):
+  매 단계 대상·동작을 각각 후보에서 고르게(둘 다 커밋 후 확인 — 교차 힌트 방지). 대상 축이
+  "LIR는 I-CSCF↔HSS, MAR는 S-CSCF↔HSS" 노드 혼동을, 동작 축이 커맨드 혼동을 따로 짚는다.
+- [x] **steps를 다이어그램-성장 방식으로 개선**(피드백: N-actor 시각화가 기억에 더 남음).
+  steps를 `{from,to,act}` 화살표 + `actors` 레인으로 바꿔, 맞힐 때마다 시퀀스 다이어그램에
+  화살표가 그려지며 쌓이게(`renderDiagram` 재사용). ims 3개를 **5-actor**로 재구성(등록:
+  UE·P-CSCF·I-CSCF·S-CSCF·HSS / 착신: 발신자·I-CSCF·HSS·S-CSCF·UE / 발신: UE·P-CSCF·PCRF·
+  S-CSCF·상대망). 폰 여백 축소(#app 12·card 14·diagram 11px·actor패딩 축소) + 넘치면
+  `.diagram-scroll` 가로 스크롤 폴백. 다중 actor(3+) 폰 검증 대상이 diam-0001 → ims 5-actor로 확장.
 
 ## 지금 열린 항목 (다음 작업)
 

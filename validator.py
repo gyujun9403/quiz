@@ -150,17 +150,23 @@ def validate(questions):
                 else:
                     _check_order_items(errors, loc, "decoys", decoys)
         elif qtype == "steps":
+            actors = q.get("actors")
+            if actors is not None and (not isinstance(actors, list)
+                                       or not all(str(a).strip() for a in actors)):
+                errors.append(f"[{loc}] steps actors가 비어있지 않은 문자열 리스트가 아님")
+                actors = None
             steps = q.get("steps")
             if not isinstance(steps, list) or len(steps) < 2:
                 errors.append(f"[{loc}] steps가 없거나 2개 미만")
             else:
-                _check_steps_items(errors, loc, "steps", steps)
+                _check_steps_items(errors, loc, "steps", steps, actors)
             decoys = q.get("decoys")
             if decoys is not None:
                 if not isinstance(decoys, list) or len(decoys) == 0:
                     errors.append(f"[{loc}] steps decoys가 비어있지 않은 리스트가 아님")
                 else:
-                    _check_steps_items(errors, loc, "decoys", decoys)
+                    # decoy는 레인에 없는 actor를 참조해도 됨(그려지지 않고 오답 보기로만 쓰임).
+                    _check_steps_items(errors, loc, "decoys", decoys, None)
 
     return errors
 
@@ -177,14 +183,23 @@ def _check_order_items(errors, loc, field, items):
             errors.append(f"[{loc}] {field}[{i}] from/to가 동일함")
 
 
-def _check_steps_items(errors, loc, field, items):
+def _check_steps_items(errors, loc, field, items, actors):
     for i, item in enumerate(items):
         if not isinstance(item, dict):
-            errors.append(f"[{loc}] {field}[{i}]가 매핑이 아님 (actor/act 필요)")
+            errors.append(f"[{loc}] {field}[{i}]가 매핑이 아님 (from/to/act 필요)")
             continue
-        for key in ("actor", "act"):
+        for key in ("from", "to", "act"):
             if not str(item.get(key, "")).strip():
                 errors.append(f"[{loc}] {field}[{i}].{key} 비어있음")
+        if item.get("from") and item.get("from") == item.get("to"):
+            errors.append(f"[{loc}] {field}[{i}] from/to가 동일함")
+        if actors is not None:
+            for key in ("from", "to"):
+                v = item.get(key)
+                if v and v not in actors:
+                    errors.append(
+                        f"[{loc}] {field}[{i}].{key} '{v}'가 actors 레인 목록에 없음"
+                    )
 
 
 def main():

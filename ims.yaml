@@ -106,3 +106,194 @@
     라우팅)·MAR(등록 인증)는 발신엔 없어 decoy. 2번째 INVITE는 등록 때 받은 Service-Route
     경로라는 점이 발신의 출발 포인트다.
   ref: "3GPP TS 24.229 (발신 흐름); TS 29.214 (Rx)"
+
+- id: ims-0004
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "단말의 첫 SIP 접점(Gm 인터페이스)이며, 로밍 시 방문망에 위치하고 미디어 정책을
+    위해 PCRF와 Rx로 연동하는 IMS 노드는?"
+  choices: ["P-CSCF", "I-CSCF", "S-CSCF", "HSS"]
+  answer: 0
+  explain: |
+    P-CSCF(Proxy-CSCF)는 UE의 첫 접점으로 Gm 구간을 담당한다. 로밍이면 방문망에 있고,
+    미디어 자원 인가를 위해 PCRF와 Rx(AAR 등)로 연동한다.
+  ref: "3GPP TS 23.228 (CSCF 기능)"
+
+- id: ims-0005
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "홈망의 진입점(entry point)으로, HSS에 Cx로 조회해 사용자를 담당할 S-CSCF를 찾아
+    라우팅하고 토폴로지 은닉을 할 수 있는 노드는?"
+  choices: ["I-CSCF", "P-CSCF", "S-CSCF", "AS"]
+  answer: 0
+  explain: |
+    I-CSCF(Interrogating-CSCF)는 외부에서 들어오는 요청의 홈망 진입점이다. Cx로 HSS에
+    물어(UAR/LIR) S-CSCF를 정하고, 필요시 토폴로지 은닉(THIG)도 한다.
+  ref: "3GPP TS 23.228 (CSCF 기능)"
+
+- id: ims-0006
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "등록 시 레지스트라 역할을 하고, 세션 제어와 iFC 기반 서비스 트리거·사용자 프로필
+    보유를 담당하며 항상 홈망에 상주하는 노드는?"
+  choices: ["S-CSCF", "P-CSCF", "I-CSCF", "HSS"]
+  answer: 0
+  explain: |
+    S-CSCF(Serving-CSCF)는 IMS의 핵심 세션 제어 노드다. 등록을 처리(레지스트라)하고 HSS에서
+    프로필을 받아(SAR/SAA) iFC로 AS를 트리거한다. 항상 홈망에 있다.
+  ref: "3GPP TS 23.228 (CSCF 기능)"
+
+- id: ims-0007
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "가입자 마스터 DB로서 가입 정보·인증 데이터(인증 벡터)·서비스 프로필·S-CSCF 할당
+    정보를 보관하는 노드는?"
+  choices: ["HSS", "S-CSCF", "P-CSCF", "PCRF"]
+  answer: 0
+  explain: |
+    HSS(Home Subscriber Server)는 사용자별 마스터 DB다. 인증 벡터·서비스 프로필·어느
+    S-CSCF가 담당하는지 등을 갖고 Cx/Sh로 CSCF·AS에 제공한다.
+  ref: "3GPP TS 23.228 (HSS)"
+
+- id: ims-0008
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "S-CSCF가 iFC 판정에 따라 세션을 넘겨 실제 서비스 로직(착신전환·통화녹음 등)을
+    실행하는 노드와, 그 사이 인터페이스가 옳게 짝지어진 것은?"
+  choices:
+    - "AS — ISC"
+    - "P-CSCF — Gm"
+    - "HSS — Cx"
+    - "PCRF — Rx"
+  answer: 0
+  explain: |
+    서비스 로직은 AS(Application Server)가 실행하고, S-CSCF↔AS 구간은 ISC 레퍼런스
+    포인트다. AS는 가입자 데이터가 필요하면 Sh로 HSS와 통신한다.
+  ref: "3GPP TS 23.228 (ISC/AS)"
+
+- id: ims-0009
+  type: ox
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "S-CSCF는 항상 사용자의 홈망에 위치하며, I-CSCF는 주로 등록과 착신 라우팅 시 HSS
+    조회를 위해 관여한다."
+  answer: true
+  explain: |
+    맞다. S-CSCF는 홈망 상주 세션 제어 노드이고, I-CSCF는 홈망 진입점으로 등록(UAR)·착신
+    (LIR) 때 HSS에 물어 S-CSCF를 찾는 역할이 주다.
+  ref: "3GPP TS 23.228 (CSCF 기능)"
+
+- id: ims-0010
+  type: ox
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "P-CSCF가 그 사용자를 담당할 S-CSCF를 직접 선택한다."
+  answer: false
+  explain: |
+    아니다. S-CSCF 선택은 I-CSCF가 HSS 조회(UAR/UAA)로 정한다. P-CSCF는 단말의 첫 접점
+    이자 SIP 프록시일 뿐, S-CSCF를 고르지 않는다.
+  ref: "3GPP TS 23.228 (등록 절차)"
+
+- id: ims-0011
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "IMS 등록·인증에 쓰이고 ISIM에 저장되며 통화 상대에게 노출되지 않는, NAI
+    (user@realm) 형식의 사설 식별자는?"
+  choices: ["IMPI (사설 식별자)", "IMPU (공개 식별자)", "IMSI", "GRUU"]
+  answer: 0
+  explain: |
+    IMPI(IMS Private Identity)는 홈 사업자가 부여하는 인증/등록용 사설 식별자로 NAI
+    형식이며 ISIM에 저장된다. 통화 상대에게 노출되는 것은 IMPU다.
+  ref: "3GPP TS 23.228 (사용자 식별자)"
+
+- id: ims-0012
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "다른 사용자가 이 사용자에게 도달할 때 쓰는 sip:/tel: URI 형식의 공개 식별자
+    (한 가입에 여러 개 가능)는?"
+  choices: ["IMPU (공개 식별자)", "IMPI (사설 식별자)", "IMEI", "Call-ID"]
+  answer: 0
+  explain: |
+    IMPU(IMS Public Identity)는 남들이 나에게 연결할 때 쓰는 공개 주소(sip:/tel:)로, 한
+    가입에 여러 개를 둘 수 있다(업무용/개인용 등). 인증용 사설 식별자는 IMPI다.
+  ref: "3GPP TS 23.228 (사용자 식별자)"
+
+- id: ims-0013
+  type: ox
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "IMPU(공개 식별자)는 한 가입자당 정확히 하나만 존재한다."
+  answer: false
+  explain: |
+    아니다. IMPU는 한 가입에 여러 개를 둘 수 있다(예: 업무용/개인용 번호). 인증에 쓰이는
+    IMPI와 도달에 쓰이는 IMPU를 구분하는 게 핵심이다.
+  ref: "3GPP TS 23.228 (사용자 식별자)"
+
+- id: ims-0014
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "UE와 P-CSCF 사이의 SIP 레퍼런스 포인트(단말-망 접점) 이름은?"
+  choices: ["Gm", "Mw", "Cx", "ISC"]
+  answer: 0
+  explain: |
+    Gm은 UE↔P-CSCF 구간이다. CSCF들 사이는 Mw, CSCF↔HSS는 Cx, S-CSCF↔AS는 ISC로
+    구간마다 이름이 정해져 있다.
+  ref: "3GPP TS 23.228 (레퍼런스 포인트)"
+
+- id: ims-0015
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "S-CSCF와 Application Server(AS) 사이의 레퍼런스 포인트는?"
+  choices: ["ISC", "Cx", "Sh", "Rx"]
+  answer: 0
+  explain: |
+    ISC(IMS Service Control)는 S-CSCF↔AS 구간으로, iFC에 걸리면 이 경로로 세션을 AS에
+    넘긴다. Cx(CSCF↔HSS)·Sh(AS↔HSS)·Rx(P-CSCF↔PCRF)와 구분한다.
+  ref: "3GPP TS 23.228 (레퍼런스 포인트)"
+
+- id: ims-0016
+  type: mcq
+  topic: IMS
+  difficulty: basic
+  tags: [concept, command-code]
+  question: "UAR/MAR/SAR/LIR(등록·인증·서버할당·착신조회)가 오가는, CSCF와 HSS 사이의
+    레퍼런스 포인트는?"
+  choices: ["Cx", "Gm", "Mw", "ISC"]
+  answer: 0
+  explain: |
+    Cx는 I/S-CSCF↔HSS 구간으로 등록 인가(UAR)·인증(MAR)·서버 할당(SAR)·착신 조회(LIR)를
+    나른다(diam-0001~). 같은 HSS라도 AS와의 구간은 Sh다.
+  ref: "3GPP TS 23.228 (레퍼런스 포인트); TS 29.228"
+
+- id: ims-0017
+  type: ox
+  topic: IMS
+  difficulty: basic
+  tags: [concept]
+  question: "P-CSCF·I-CSCF·S-CSCF 등 CSCF들 사이의 SIP 구간은 Mw 레퍼런스 포인트다."
+  answer: true
+  explain: |
+    맞다. CSCF 간 SIP 구간은 Mw다. UE↔P-CSCF는 Gm, CSCF↔HSS는 Cx로, 같은 SIP라도
+    구간마다 레퍼런스 포인트 이름이 다르다.
+  ref: "3GPP TS 23.228 (레퍼런스 포인트)"

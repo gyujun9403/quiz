@@ -313,6 +313,12 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 - [x] **steps 워크스루 UX 개선**(피드백 4건): (1) R/A 쌍은 `rt:true`로 요청→·응답← 두 화살표
   펼침. (2) 틀린 슬롯만 빨강 표시. (3) 끝에 "정답 X/Y". (4) 화살표 초록 강조(highlightStep·
   `.diagram-row.hl`).
+- [x] **SIP/IMS 기본 개념 1차 보완 28문제**(공백 메움). SIP 헤더·개념 14(sip-0047~0060,
+  header 태그 첫 사용): Via/branch(z9hG4bK)·다이얼로그(Call-ID+태그)·트랜잭션·CSeq·Contact·
+  Max-Forwards(70)·Record-Route·Registrar/Redirect·OPTIONS·Request-URI vs To. IMS 개념 14
+  (ims-0004~0017): 엔티티 역할(P/I/S-CSCF·HSS·AS)·식별자(IMPI/IMPU)·레퍼런스 포인트(Gm/Mw/
+  Cx/ISC/Sh/Rx). RFC 3261(§8·§12·§16·§20)·3GPP TS 23.228 대조(23.228 세부 조항번호는 미검증
+  이라 스펙명+영역으로 표기). 총 101문제(SIP 60 / Diameter 24 / IMS 17), SIP ox 10:10.
 - [x] **커맨드 뜻 피드백 추가**(피드백: 동작이 무슨 약자·동작인지 피드백 없어 '찍기'가 됨).
   확인하면 커맨드 풀네임·인터페이스·동작을 보여주고 `다음 ▸`으로 진행(맞든 틀리든 학습, 틀리면
   왜 아닌지도). 데이터는 `glossary`(act→뜻, decoy 포함) 한 벌. 상호작용을 "즉시 자동진행"에서

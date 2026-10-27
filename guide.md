@@ -291,8 +291,10 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 - 배포 순서: YAML이나 `web/`을 고친다 → `python3 build.py` → 바뀐 `quiz.html`까지 함께
   커밋 → `git push`. Pages는 커밋된 `quiz.html`을 그대로 배포하므로, 빌드를 빼먹으면
   변경이 반영되지 않는다.
-- 빌드 누락 방지: `.github/workflows/check.yml`이 push마다 검증기를 돌리고, 다시 빌드한
-  `quiz.html`이 커밋된 것과 같은지 확인한다. 다르면 GitHub Actions 실행이 실패로 표시된다.
+- 빌드 누락 방지(보류 중): push마다 검증기를 돌리고 다시 빌드한 `quiz.html`이 커밋된 것과
+  같은지 확인하는 GitHub Actions 워크플로를 로컬 `ci-check` 브랜치에 만들어 두었다. 이 개발
+  환경에 저장된 GitHub 토큰에 `workflow` 권한이 없어 push가 거부되었다(2026-10-27). 토큰에
+  `workflow` 권한을 추가한 뒤 `ci-check`를 main에 병합해 push하면 적용된다.
 - 트레이드오프: 완전 오프라인은 포기 — 접속 시 인터넷(LTE 등)이 필요하다. 버스 환경에서
   데이터 연결이 안 되는 경우가 잦다면 다시 논의.
 - 퍼블릭 repo이므로 URL을 아는 사람은 누구나 볼 수 있다(민감한 내용 없어 문제 없음).

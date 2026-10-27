@@ -113,5 +113,7 @@ Claude Code는 이 파일을 자동으로 읽지 않는다. 과거 결정의 경
   - 원문 메시지 문제 2개(sip-0063·0064)를 추가했다. RFC 3261 §24.2 예시 INVITE를 그대로 썼다.
 - [x] `.claude/settings.json`에서 지난 세션의 임시 경로 규칙과 `Bash(python3 -)`(임의 코드
   실행 허용)를 지웠다.
-- [x] `.github/workflows/check.yml` 추가. push마다 검증하고 `quiz.html`이 최신인지 확인한다.
+- [ ] `.github/workflows/check.yml`(push마다 검증하고 `quiz.html`이 최신인지 확인)을 만들었으나
+  보류했다. 저장된 GitHub 토큰에 `workflow` 권한이 없어 push가 거부되었다. 로컬 `ci-check`
+  브랜치에 있다.
 - [x] guide.md의 낡은 서술(배포 방식, steps decoy 구조, 열린 항목)을 실제 상태에 맞췄다.

@@ -881,3 +881,21 @@
     아니다. Contact는 다이얼로그를 만드는 INVITE와 그 200 OK에도 들어가, 이후 후속
     요청(re-INVITE·BYE)의 직접 목적지로 쓰인다. REGISTER 전용이 아니다.
   ref: "RFC 3261 §20.10"
+
+- id: sip-0061
+  type: match
+  topic: SIP
+  difficulty: basic
+  tags: [response-code]
+  question: "호가 연결되지 못하고 끝날 때 자주 보는 응답 코드와 그 의미를 짝지어라."
+  pairs:
+    - {left: "404 Not Found", right: "그 도메인에 해당 사용자가 아예 없음"}
+    - {left: "480 Temporarily Unavailable", right: "사용자는 있으나 지금 응대 불가(로그아웃·방해금지 등)"}
+    - {left: "486 Busy Here", right: "착신 단말이 다른 통화를 처리 중"}
+    - {left: "487 Request Terminated", right: "진행 중이던 요청이 CANCEL·BYE로 중단됨"}
+  explain: |
+    네 코드 모두 4xx(요청 실패)지만 실패 이유가 다르다. 404는 사용자가 존재하지 않는다는
+    확정 정보다. 480은 사용자는 존재하지만 지금 연결할 수 없는 상태 전반을 뜻한다. 486은
+    그중 "이 단말이 통화 중"이라는 이유를 구체적으로 알린다. 487은 상대 상태와 무관하게
+    발신 측이 CANCEL 등으로 원래 요청을 중단했을 때 그 원래 요청에 대한 최종 응답이다.
+  ref: "RFC 3261 §21.4.5, §21.4.18, §21.4.24, §21.4.25"

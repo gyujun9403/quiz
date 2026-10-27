@@ -20,7 +20,8 @@ ALLOWED_TAGS = {
     "avp", "command-code", "result-code", "transport", "concept",
 }
 ALLOWED_DIFFICULTY = {"basic", "advanced"}
-VALID_TYPES = {"mcq", "ox", "short", "order", "steps"}
+VALID_TYPES = {"mcq", "ox", "short", "order", "steps", "match"}
+MATCH_MIN_PAIRS, MATCH_MAX_PAIRS = 2, 6
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
 
 
@@ -149,6 +150,18 @@ def validate(questions):
                     errors.append(f"[{loc}] order decoys가 비어있지 않은 리스트가 아님")
                 else:
                     _check_order_items(errors, loc, "decoys", decoys)
+            # direction(선택): false면 방향을 채점하지 않는다. 생략하면 방향도 채점(기존 동작).
+            if "direction" in q and not isinstance(q["direction"], bool):
+                errors.append(f"[{loc}] order direction이 불리언이 아님: {q['direction']!r}")
+        elif qtype == "match":
+            pairs = q.get("pairs")
+            if not isinstance(pairs, list) \
+                    or not (MATCH_MIN_PAIRS <= len(pairs) <= MATCH_MAX_PAIRS):
+                errors.append(
+                    f"[{loc}] match pairs가 {MATCH_MIN_PAIRS}~{MATCH_MAX_PAIRS}개 리스트가 아님"
+                )
+            else:
+                _check_match_pairs(errors, loc, pairs)
         elif qtype == "steps":
             actors = q.get("actors")
             if actors is not None and (not isinstance(actors, list)
@@ -196,6 +209,23 @@ def _check_order_items(errors, loc, field, items):
                 errors.append(f"[{loc}] {field}[{i}].{key} 비어있음")
         if item.get("from") and item.get("from") == item.get("to"):
             errors.append(f"[{loc}] {field}[{i}] from/to가 동일함")
+
+
+def _check_match_pairs(errors, loc, pairs):
+    # 같은 글자의 항목이 한 열에 둘 있으면 화면에서 구분할 수 없어 채점이 어긋난다.
+    seen = {"left": set(), "right": set()}
+    for i, p in enumerate(pairs):
+        if not isinstance(p, dict):
+            errors.append(f"[{loc}] pairs[{i}]가 매핑이 아님 (left/right 필요)")
+            continue
+        for key in ("left", "right"):
+            v = p.get(key)
+            if not isinstance(v, str) or not v.strip():
+                errors.append(f"[{loc}] pairs[{i}].{key}가 비어있지 않은 문자열이 아님")
+            elif v in seen[key]:
+                errors.append(f"[{loc}] pairs[{i}].{key} '{v}' 중복")
+            else:
+                seen[key].add(v)
 
 
 def _check_steps_items(errors, loc, field, items, actors):

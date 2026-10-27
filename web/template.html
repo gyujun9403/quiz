@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>SIP/Diameter 퀴즈</title>
+<style>
+__STYLE__</style>
+</head>
+<body>
+<div id="app">
+  <header id="hdr" hidden>
+    <button id="deck-change" class="linkbtn"></button>
+    <span id="deck-label"></span>
+  </header>
+  <div id="start" class="card" hidden>
+    <div class="start-title">덱 선택</div>
+    <div id="topic-group" class="picker-group">
+      <div class="picker-label">주제</div>
+      <div id="pick-topic" class="picker-row"></div>
+    </div>
+    <div class="picker-group">
+      <div class="picker-label">난이도</div>
+      <div id="pick-diff" class="picker-row"></div>
+    </div>
+    <div id="mode-group" class="picker-group">
+      <div class="picker-label">유형</div>
+      <div id="pick-mode" class="picker-row"></div>
+    </div>
+    <div id="pick-count" class="pick-count"></div>
+    <button id="start-btn" class="primary">시작</button>
+  </div>
+  <div id="quiz" class="card" hidden>
+    <div id="badges" class="badges"></div>
+    <div id="question" class="question"></div>
+    <div id="answer-area"></div>
+    <button id="pass-btn" class="secondary">모르겠음 (PASS)</button>
+    <div id="feedback" class="feedback" hidden>
+      <div id="verdict" class="verdict"></div>
+      <div id="diagram"></div>
+      <p id="explain" class="explain"></p>
+      <p id="ref" class="ref"></p>
+      <button id="next-btn" class="primary">다음 문제</button>
+    </div>
+  </div>
+  <footer>상태 저장 없음 · 새로고침하면 처음부터</footer>
+</div>
+
+<script id="quiz-data" type="application/json">__QUIZ_DATA__</script>
+<script>
+__APP__</script>
+</body>
+</html>

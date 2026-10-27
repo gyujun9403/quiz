@@ -23,6 +23,11 @@ ALLOWED_DIFFICULTY = {"basic", "advanced"}
 VALID_TYPES = {"mcq", "ox", "short", "order", "steps", "match"}
 MATCH_MIN_PAIRS, MATCH_MAX_PAIRS = 2, 6
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
+# 폐기한 문제 ID와 폐기 이유. 폐기 번호 재사용 금지(guide.md ID 규칙)를 검증기가 강제한다.
+RETIRED_IDS = {
+    "sip-0036": "sip-0035와 같은 사실(100 Trying의 의미)을 같은 방향으로 반복",
+    "diam-0010": "diam-0006과 같은 사실(LIR의 용도)을 같은 방향으로 반복",
+}
 
 
 def load_yaml_files(paths):
@@ -65,6 +70,8 @@ def validate(questions):
                 errors.append(
                     f"[{loc}] id 형식 오류 — '접두어-4자리숫자' 형식이어야 함 (예: sip-0001)"
                 )
+            if qid in RETIRED_IDS:
+                errors.append(f"[{loc}] 폐기된 id 재사용 금지 ({RETIRED_IDS[qid]})")
             if qid in seen_ids:
                 errors.append(f"[{loc}] id 중복 (이미 {seen_ids[qid]}에서 사용)")
             else:
@@ -132,8 +139,9 @@ def validate(questions):
                 errors.append(f"[{loc}] ox answer가 불리언이 아님: {answer!r}")
         elif qtype == "short":
             answer = q.get("answer")
+            # 따옴표 없는 숫자(answer: [300])는 YAML이 int로 읽어 브라우저 JS 비교가 깨지므로 거부.
             if not isinstance(answer, list) or len(answer) == 0 \
-                    or not all(str(a).strip() for a in answer):
+                    or not all(isinstance(a, str) and a.strip() for a in answer):
                 errors.append(
                     f"[{loc}] short answer가 비어있지 않은 문자열 리스트가 아님: {answer!r}"
                 )
@@ -150,6 +158,12 @@ def validate(questions):
                     errors.append(f"[{loc}] order decoys가 비어있지 않은 리스트가 아님")
                 else:
                     _check_order_items(errors, loc, "decoys", decoys)
+            # 같은 글자의 조각이 둘이면 화면에서 구분이 안 되는데 채점은 조각 번호로 해서 어긋난다.
+            msgs = [str(it.get("msg", "")) for src in (items, decoys) if isinstance(src, list)
+                    for it in src if isinstance(it, dict)]
+            dup = sorted({m for m in msgs if msgs.count(m) > 1})
+            if dup:
+                errors.append(f"[{loc}] order items+decoys에 같은 msg 중복: {dup}")
             # direction(선택): false면 방향을 채점하지 않는다. 생략하면 방향도 채점(기존 동작).
             if "direction" in q and not isinstance(q["direction"], bool):
                 errors.append(f"[{loc}] order direction이 불리언이 아님: {q['direction']!r}")
@@ -211,6 +225,34 @@ def _check_order_items(errors, loc, field, items):
             errors.append(f"[{loc}] {field}[{i}] from/to가 동일함")
 
 
+MCQ_LONGEST_RATIO = 1.5
+MCQ_LONGEST_MIN_LEN = 15
+
+
+def lint(questions):
+    """실패로 막지는 않지만 고치는 게 좋은 문제를 경고로 돌려준다."""
+    warnings = []
+    for q in questions:
+        if q.get("type") != "mcq":
+            continue
+        choices, answer = q.get("choices"), q.get("answer")
+        if not isinstance(choices, list) or not isinstance(answer, int) \
+                or not (0 <= answer < len(choices)) or len(choices) < 2:
+            continue
+        lens = [len(str(c)) for c in choices]
+        others = lens[:answer] + lens[answer + 1:]
+        # 정답만 눈에 띄게 길면 내용을 몰라도 "가장 긴 보기"를 골라 맞힐 수 있다.
+        # 보기가 이름·약어(ISC vs Gm, Record-Route vs Via)면 길이를 맞출 수 없고 단서도
+        # 약하므로, 정답이 서술형(MCQ_LONGEST_MIN_LEN자 이상)일 때만 본다.
+        if lens[answer] >= MCQ_LONGEST_MIN_LEN \
+                and lens[answer] >= MCQ_LONGEST_RATIO * max(others):
+            warnings.append(
+                f"[{q.get('id')}] mcq 정답 보기가 다른 보기보다 {lens[answer] / max(others):.1f}배 김 "
+                f"(정답 {lens[answer]}자, 가장 긴 오답 {max(others)}자) — 오답 길이를 맞출 것"
+            )
+    return warnings
+
+
 def _check_match_pairs(errors, loc, pairs):
     # 같은 글자의 항목이 한 열에 둘 있으면 화면에서 구분할 수 없어 채점이 어긋난다.
     seen = {"left": set(), "right": set()}
@@ -263,6 +305,11 @@ def main():
         sys.exit(1)
 
     print(f"검증 통과: {len(questions)}개 문제, {len(paths)}개 파일")
+    warnings = lint(questions)
+    if warnings:
+        print(f"\n경고 {len(warnings)}개 (빌드는 막지 않음)")
+        for w in warnings:
+            print(" -", w)
 
 
 if __name__ == "__main__":

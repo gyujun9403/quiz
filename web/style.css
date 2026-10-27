@@ -58,6 +58,7 @@
     padding: 12px;
   }
   .badges { margin-bottom: 10px; }
+  .badge.id { font-family: ui-monospace, "SF Mono", Menlo, monospace; border-style: dashed; }
   .badge {
     display: inline-block;
     font-size: 11px;
@@ -120,6 +121,8 @@
     font-size: 14px;
     padding: 8px 2px 2px;
   }
+  .order-tools { display: flex; justify-content: flex-end; gap: 14px; }
+  .order-tools[hidden] { display: none; }
   .order-reset {
     font-size: 13px;
     color: var(--muted);
@@ -260,6 +263,9 @@
   .diagram-row.hl .diagram-msg { color: var(--good-fg); font-weight: 700; }
   .diagram-row.hl .diagram-line { background: var(--good-fg); height: 2px; }
   .diagram-row.hl .diagram-line::after { color: var(--good-fg); }
+  .diagram-row.bad .diagram-msg { color: var(--bad-fg); font-weight: 700; }
+  .diagram-row.bad .diagram-line { background: var(--bad-fg); height: 2px; }
+  .diagram-row.bad .diagram-line::after { color: var(--bad-fg); }
   footer { text-align: center; color: var(--muted); font-size: 12px; margin-top: 14px; }
   .start-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; }
   .picker-group { margin-bottom: 18px; }

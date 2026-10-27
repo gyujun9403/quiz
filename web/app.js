@@ -11,6 +11,7 @@
   var current = null;
   var answered = false;
   var DIFF_LABEL = { basic: "기본", advanced: "심화" };
+  var TYPE_LABEL = { mcq: "객관식", ox: "O/X", short: "단답", order: "순서 나열", steps: "단계 완성", match: "짝맞추기" };
   var MODE_LABEL = { "__all__": "전체", quick: "짧은 문제", order: "순서 나열", steps: "단계 완성" };
   var sel = { topic: "__all__", difficulty: "__all__", mode: "__all__" };
 
@@ -47,7 +48,15 @@
   }
 
   function nextQuestion() {
-    if (deck.length === 0) deck = shuffle(POOL);
+    if (deck.length === 0) {
+      deck = shuffle(POOL);
+      // 새로 섞은 덱의 첫 문제가 방금 낸 문제면 덱 맨 뒤로 보낸다(덱 경계에서 연속 출제 방지).
+      var last = deck.length - 1;
+      if (last > 0 && deck[last] === current) {
+        deck[last] = deck[0];
+        deck[0] = current;
+      }
+    }
     return deck.pop();
   }
 
@@ -135,7 +144,8 @@
       var x2 = xOf(Math.max(fromIdx, toIdx));
 
       var hl = (highlightStep != null && r.stepIdx === highlightStep) ? " hl" : "";
-      var row = el("div", { cls: "diagram-row" + (onRowClick ? " tappable" : "") + hl });
+      var bad = r.bad ? " bad" : ""; // 채점 후 틀린 줄(order)을 빨갛게 표시.
+      var row = el("div", { cls: "diagram-row" + (onRowClick ? " tappable" : "") + hl + bad });
       row.style.top = (idx * DIAGRAM_ROW_H) + "px";
 
       var msg = el("div", { cls: "diagram-msg", text: (idx + 1) + ". " + r.msg });
@@ -208,20 +218,34 @@
     elAnswerArea.appendChild(row);
   }
 
+  // short 비교용 정규화: 대소문자와 모든 공백을 무시한다("Busy Here" = "busyhere").
+  function normShort(s) { return String(s).toLowerCase().replace(/\s+/g, ""); }
+
   function renderShort(q) {
     var input = el("input");
     input.type = "text";
     input.autocapitalize = "off";
     input.autocomplete = "off";
+    // iOS 자동 수정이 z9hG4bK 같은 입력을 다른 단어로 바꾸지 않게 끈다.
+    input.setAttribute("autocorrect", "off");
+    input.spellcheck = false;
+    // 정답이 전부 숫자면 숫자 키패드를 띄운다.
+    if (q.answer.every(function (a) { return /^\d+$/.test(String(a).trim()); })) {
+      input.inputMode = "numeric";
+    }
     var submit = el("button", { cls: "primary", text: "확인" });
-    submit.addEventListener("click", function () {
+    function grade() {
       if (answered) return;
-      var given = input.value.trim().toLowerCase();
-      var isCorrect = q.answer.some(function (a) { return a.trim().toLowerCase() === given; });
+      var given = normShort(input.value);
+      if (!given) return; // 빈 입력은 채점하지 않는다. 모르면 PASS.
+      var isCorrect = q.answer.some(function (a) { return normShort(a) === given; });
       input.disabled = true;
       submit.disabled = true;
       showFeedback(isCorrect, q.explain + "\n정답: " + q.answer[0], q.ref);
-    });
+    }
+    submit.addEventListener("click", grade);
+    // 키보드의 return(Enter)으로도 제출한다.
+    input.addEventListener("keydown", function (e) { if (e.key === "Enter") grade(); });
     elAnswerArea.appendChild(input);
     elAnswerArea.appendChild(submit);
   }
@@ -260,14 +284,23 @@
       });
     }
 
+    // 담긴 i번째 조각이 정답 i번째와 같은지(gradeDir면 방향까지). 채점과 틀린 줄 표시에 같이 쓴다.
+    function rowOk(entry, i) {
+      if (entry.uid !== i) return false;
+      if (!gradeDir) return true;
+      var pair = pairs[entry.pairIndex];
+      return pair[0] === entry.item.from && pair[1] === entry.item.to;
+    }
+
     function renderAnswer() {
       answerEl.innerHTML = "";
-      var rows = chosen.map(function (entry) {
-        if (!gradeDir) return { msg: entry.item.msg, from: entry.item.from, to: entry.item.to };
+      var rows = chosen.map(function (entry, i) {
+        var bad = answered && !rowOk(entry, i);
+        if (!gradeDir) return { msg: entry.item.msg, from: entry.item.from, to: entry.item.to, bad: bad };
         var pair = pairs[entry.pairIndex];
-        return { msg: entry.item.msg, from: pair[0], to: pair[1] };
+        return { msg: entry.item.msg, from: pair[0], to: pair[1], bad: bad };
       });
-      answerEl.appendChild(renderDiagram(actors, rows, gradeDir ? function (idx) {
+      answerEl.appendChild(renderDiagram(actors, rows, gradeDir && !answered ? function (idx) {
         if (answered) return;
         chosen[idx].pairIndex = (chosen[idx].pairIndex + 1) % pairs.length;
         renderAnswer();
@@ -281,6 +314,14 @@
       }
     }
 
+    var tools = el("div", { cls: "order-tools" });
+    var undoBtn = el("button", { cls: "order-reset", text: "← 하나 취소" });
+    undoBtn.addEventListener("click", function () {
+      if (answered) return;
+      chosen.pop();
+      renderPool();
+      renderAnswer();
+    });
     var resetBtn = el("button", { cls: "order-reset", text: "↺ 처음부터" });
     resetBtn.addEventListener("click", function () {
       if (answered) return;
@@ -288,21 +329,29 @@
       renderPool();
       renderAnswer();
     });
+    tools.appendChild(undoBtn);
+    tools.appendChild(resetBtn);
+
+    var answerLabel = el("div", {
+      cls: "order-label", text: gradeDir ? "내 답안 (탭하면 방향 전환)" : "내 답안"
+    });
 
     var submit = el("button", { cls: "primary", text: "확인" });
     submit.addEventListener("click", function () {
       if (answered) return;
       if (chosen.length === 0) return;
       // 정답: 담은 것이 정확히 q.items(개수·순서·방향)와 일치하고 decoy를 하나도 안 담음.
-      // gradeDir가 false면 방향은 비교하지 않는다.
-      var isCorrect = chosen.length === q.items.length && chosen.every(function (entry, i) {
-        if (entry.uid !== i) return false;
-        if (!gradeDir) return true;
-        var pair = pairs[entry.pairIndex];
-        return pair[0] === entry.item.from && pair[1] === entry.item.to;
-      });
+      var isCorrect = chosen.length === q.items.length && chosen.every(rowOk);
       submit.disabled = true;
-      showFeedback(isCorrect, q.explain, q.ref, buildDiagram(q.items));
+      var key = el("div");
+      key.appendChild(el("div", { cls: "order-label", text: "정답 흐름" }));
+      key.appendChild(buildDiagram(q.items));
+      showFeedback(isCorrect, q.explain, q.ref, key);
+      // showFeedback이 answered를 세운 뒤 다시 그려야 틀린 줄이 표시된다.
+      answerLabel.textContent = isCorrect ? "내 답안" : "내 답안 (빨간 줄이 틀린 위치)";
+      tools.hidden = true;
+      renderPool();
+      renderAnswer();
     });
 
     renderPool();
@@ -313,11 +362,9 @@
       : "탭해서 순서대로 선택";
     elAnswerArea.appendChild(el("div", { cls: "order-label", text: poolLabel }));
     elAnswerArea.appendChild(poolEl);
-    elAnswerArea.appendChild(el("div", {
-      cls: "order-label", text: gradeDir ? "내 답안 (탭하면 방향 전환)" : "내 답안"
-    }));
+    elAnswerArea.appendChild(answerLabel);
     elAnswerArea.appendChild(answerEl);
-    elAnswerArea.appendChild(resetBtn);
+    elAnswerArea.appendChild(tools);
     elAnswerArea.appendChild(submit);
   }
 
@@ -538,11 +585,12 @@
   function render(q) {
     current = q;
     answered = false;
+    // 배지: 주제·유형·난이도 + 문제 ID(오류 제보 시 문제를 지목하는 용도). tags는 내부 분류용이라 안 보인다.
     elBadges.innerHTML = "";
-    elBadges.appendChild(el("span", { cls: "badge", text: DIFF_LABEL[q.difficulty] || q.difficulty }));
-    q.tags.forEach(function (t) {
+    [q.topic, TYPE_LABEL[q.type] || q.type, DIFF_LABEL[q.difficulty] || q.difficulty].forEach(function (t) {
       elBadges.appendChild(el("span", { cls: "badge", text: t }));
     });
+    elBadges.appendChild(el("span", { cls: "badge id", text: q.id }));
     elDeckCount.textContent = "남은 " + deck.length + "문제";
     elQuestion.textContent = q.question;
     elQuestion.className = "question" + (looksRaw(q.question) ? " raw" : "");

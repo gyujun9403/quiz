@@ -11,7 +11,7 @@ import json
 import os
 import sys
 
-from validator import load_yaml_files, validate
+from validator import lint, load_yaml_files, validate
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
@@ -48,6 +48,8 @@ def build(paths, out_path):
         f.write(html)
 
     print(f"생성 완료: {out_path} ({len(clean)}문제, {len(paths)}개 파일)")
+    for w in lint(questions):
+        print(" 경고:", w)
 
 
 def main():

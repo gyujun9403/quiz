@@ -99,9 +99,9 @@
   question: "LIR (Location-Info-Request)의 주 용도는?"
   choices:
     - "착신 시 사용자를 현재 서빙하는 S-CSCF의 이름을 HSS에서 조회"
-    - "사용자 인증 벡터를 HSS에서 조회"
-    - "S-CSCF를 사용자에 할당하고 프로필을 조회"
-    - "AS가 HSS의 가입자 데이터를 조회"
+    - "등록 시 사용자를 인증할 인증 벡터를 HSS에서 조회"
+    - "인증 후 S-CSCF를 사용자에 할당하고 프로필을 내려받음"
+    - "AS가 Sh 인터페이스로 HSS의 가입자 데이터를 조회"
   answer: 0
   explain: |
     LIR는 착신(terminating) 처리에서 I-CSCF가 서빙 S-CSCF 이름을 얻는 데 쓴다. 인증
@@ -146,19 +146,6 @@
     커맨드는 UAR(인가)와 LIR(착신 시 서빙 S-CSCF 조회)다. 인터페이스는 같아도 노드
     역할이 다르다.
   ref: "3GPP TS 29.229 §6.3"
-
-- id: diam-0010
-  type: ox
-  topic: Diameter
-  difficulty: basic
-  tags: [command-code, message-flow]
-  question: "LIR는 착신 호 처리 중 I-CSCF가 사용자를 서빙하는 S-CSCF 이름을 HSS에 조회할
-    때 사용한다."
-  answer: true
-  explain: |
-    맞다. 착신 INVITE를 받은 I-CSCF는 서빙 S-CSCF를 모르므로 LIR로 HSS에 물어 LIA로
-    이름을 받아 라우팅한다. 발신 등록의 UAR와 구분되는 착신 전용 조회다.
-  ref: "3GPP TS 29.229 §6.1.3"
 
 - id: diam-0011
   type: mcq

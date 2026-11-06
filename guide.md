@@ -42,11 +42,13 @@
 
 ### 허용 값 목록 (검증기가 이 목록으로 강제)
 
-- `topic`: `SIP`, `Diameter`, `IMS` (필요 시 사용자 승인 후 이 목록에 추가)
+- `topic`: `SIP`, `Diameter`, `IMS`, `EPC` (필요 시 사용자 승인 후 이 목록에 추가)
   - `IMS`(prefix `ims-`): SIP·Diameter를 아우르는 end-to-end 절차 서사용(등록/착신/발신 등).
-    IMS 등록의 앞단인 LTE 망 접속(EPC Attach) 서사도 여기에 둔다. S6a/S13 커맨드 단위 문제는
-    `Diameter`에 둔다(2026-11-06 사용자 결정, 별도 `EPC` 주제는 만들지 않음).
-    순수 SIP도 Diameter도 아닌 통합 흐름을 여기에 둔다.
+    순수 SIP도 Diameter도 아닌 통합 흐름을 여기에 둔다. LTE 첫 접속 서사 ims-0018도 여기에 있다
+    (EPC 주제를 만들기 전에 넣은 문제).
+  - `EPC`(prefix `epc-`): LTE 코어(MME·S-GW·P-GW, C-SGN) 단말 절차. 등록·페이징·휴지(S1 release)·
+    사용자 평면과 CIoT 최적화(PSM, eDRX, Control Plane CIoT)를 다룬다(2026-11-06 사용자 승인).
+    S6a/S13처럼 Diameter 커맨드 자체를 묻는 문제는 `Diameter`에 둔다.
 - `difficulty`: `basic`, `advanced` (2단계 — 필수 필드)
   - `basic`(기본): 응답 클래스 구조(1xx~6xx 의미), 고빈도 코드(200/180/486/404 등),
     기본 콜 플로우(등록·세션 설정·종료), 핵심 메서드 등 "가장 먼저 외워야 하는" 것.
@@ -184,6 +186,26 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
     - {msg: "LIA", from: "HSS", to: "I-CSCF"}
   ```
 
+### 문제 묶음 — `sets.yaml` (선택 파일)
+
+주제와 상관없이 문제를 골라 묶는 세트를 정의한다(2026-11-06 사용자 승인). 시작 화면의 '세트'
+줄에 이 파일의 순서대로 나오고, 세트를 고르면 그 세트의 문제만 출제한다. 주제·난이도·유형
+필터는 세트 안에서 다시 적용된다. 이 파일은 문제 파일이 아니라서 `*.yaml` 문제 파일 목록에서
+빠진다.
+
+```yaml
+- id: csgn            # 소문자·숫자·하이픈
+  name: "C-SGN 전체"   # 화면에 보일 이름
+  include: [csgn-reg, csgn-paging]   # 다른 세트를 통째로 묶기(한 단계만)
+- id: csgn-reg
+  name: "C-SGN ① 등록·인증"
+  ids: [ims-0018, diam-0034, epc-0001]  # 문제 ID 목록. 한 문제가 여러 세트에 들어가도 된다
+```
+
+- 세트는 불변 문제 ID로 문제를 가리킨다. 문제를 고쳐도 세트는 그대로 유지된다.
+- 검증기는 없는 문제 ID, 세트 안 중복 ID, 세트 ID 중복, 모르는 필드, 두 단계 이상의 include를 거부한다.
+- 새 문제를 특정 업무용으로 만들면 해당 세트의 `ids`에도 추가한다.
+
 ### ID 규칙 (중요)
 
 - `sip-0031`, `diam-0007` 처럼 **도메인 접두어 + 제로패딩 일련번호.**
@@ -224,6 +246,7 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 - `topic`이 허용 목록 안인지. 벗어나면 거부.
 - `difficulty`가 허용 목록(`basic`/`advanced`) 안인지. 누락·오타 시 거부(필수).
 - `tags`의 모든 값이 허용 목록 안인지. 벗어나면 거부(오타·파편화 차단).
+- `sets.yaml`(있으면)의 세트 정의. 검사 항목은 위 "문제 묶음" 절에 있다.
 
 검증을 통과한 뒤에는 빌드를 막지 않는 **경고**도 출력한다(`validator.py`의 `lint`).
 지금은 mcq에서 정답 보기만 눈에 띄게 긴 경우(15자 이상이고 가장 긴 오답의 1.5배 이상)를
@@ -243,7 +266,8 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 파이썬 생성 시점에 순서를 고정하면 "매번 랜덤"이 아니라 "재생성할 때만 랜덤"이 된다.
 아래는 모두 **브라우저 JS에서** 처리한다.
 
-- **덱 선택 시작 화면.** 앱을 열면 문제부터 내지 않고, `topic`(전체 + 데이터에 있는 주제),
+- **덱 선택 시작 화면.** 앱을 열면 문제부터 내지 않고, **세트**(전체 + `sets.yaml`의 세트, 세트가
+  없으면 줄을 숨김), `topic`(전체 + 데이터에 있는 주제),
   `difficulty`(전체/기본/심화), **유형**(전체/짧은 문제/순서 나열/단계 완성)을 골라 시작하는
   화면을 먼저 보여준다. 선택한 부분집합만 셔플 대상이 된다. 선택지는 데이터에 실제
   존재하는 값에서 동적으로 만든다(문제 없는 주제·난이도·유형은 버튼을 안 만들고, 선택지가
@@ -303,8 +327,9 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 
 ## 실행 방법과 현재 상태
 
-- 검증만 할 때: `python3 validator.py`. 문제 수와 파일 수를 출력한다.
-- 빌드할 때: `python3 build.py`. 레포 루트의 모든 `*.yaml`을 검증한 뒤 `quiz.html`을 만든다.
+- 검증만 할 때: `python3 validator.py`. 문제 수, 파일 수, 세트 수를 출력한다.
+- 빌드할 때: `python3 build.py`. 레포 루트의 문제 파일(`sets.yaml`을 뺀 모든 `*.yaml`)과
+  `sets.yaml`을 검증한 뒤 `quiz.html`을 만든다.
 - 문제 수와 분포는 이 문서에 적지 않는다. 문서에 적은 숫자는 금방 실제와 달라지므로 위 명령의
   출력으로 확인한다.
 - 지금까지의 작업 기록(무엇을 왜 바꿨는지)은 [CHANGELOG.md](CHANGELOG.md)에 있다.
@@ -322,8 +347,9 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 3. **실제 iPhone 확인.** headless chromium 390px 폭에서 diam-0001(3-actor)과 ims-0018(4-actor)을
    풀어 확인했다. 가로 넘침은 없고, 두 줄 라벨이 화살표를 가리던 문제는 라벨을 화살표 위에 붙여
    고쳤다(2026-11-06). 실제 iOS Safari의 터치·한글 표시는 아직 미확인이다.
-4. **EPC 트랙 나머지.** LTE 첫 접속 서사(ims-0018)와 S6a/S13 커맨드(diam-0033~0039)를 추가했다.
-   남은 것: USIM 통신사 변경("새 망 첫 attach + 재등록") 서사, Attach 앞단(PLMN 선택·RRC),
+4. **EPC 트랙 나머지.** LTE 첫 접속 서사(ims-0018), S6a/S13 커맨드(diam-0033~0039), C-SGN 업무용
+   EPC 문제(epc-0001~0032, `csgn-*` 세트)를 추가했다. 남은 후보: TAU 절차, Detach, 핸드오버,
+   User Plane CIoT(Connection Suspend/Resume), MT Control Plane CIoT 흐름, USIM 통신사 변경 서사,
    S6a의 IDR/DSR·Reset. TS 23.401·29.272·33.401 원문은 ETSI에서 받을 수 있다.
 5. **Diameter 추가 후보.** Cx 등록 해제(RTR, SAR 해제 유형)·PPR, Rx RAR, Sh PUR은
    추가했다(diam-0025~0033). 남은 후보: Diameter 기본 프로토콜(CER/CEA, DWR/DWA, DPR/DPA,
@@ -341,3 +367,8 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
     §6.1.3 SAR, §6.1.5 LIR, §6.1.7 MAR, §6.2 Result-Code, §6.3 AVP)와 맞지 않는 `ref`가 있다.
     diam-0002·0006·0008(LIR을 §6.1.3으로 표기), diam-0004·0007·0009(MAR을 §6.3으로 표기),
     diam-0005(SAR을 §6.2로 표기)다. 정답 내용은 맞고 조항 번호만 틀렸다.
+11. **(사용자 결정 필요) order에 `actors` 필드 추가.** order는 레인 순서를 정답 조각에 처음 등장한
+    순서로 정한다. 그래서 epc-0017(S1 release)처럼 첫 메시지가 eNodeB→MME인 흐름은 UE가 맨 오른쪽에
+    놓인다. steps처럼 `actors`(선택)로 레인 순서를 고정하면 해결된다. 스키마 변경이라 보류 중.
+12. **(사용자 결정 필요) ims-0018을 EPC로 옮길지.** ID는 바꿀 수 없으므로 옮기려면 새 `epc-` 문제로
+    다시 만들고 ims-0018은 `RETIRED_IDS`에 등록해야 한다. 지금은 IMS에 둔 채 `csgn-reg` 세트에 넣었다.

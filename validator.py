@@ -14,6 +14,7 @@ ALLOWED_TOPICS = {
     "SIP": "sip",
     "Diameter": "diam",
     "IMS": "ims",
+    "EPC": "epc",
 }
 ALLOWED_TAGS = {
     "response-code", "method", "header", "message-flow",
@@ -23,6 +24,9 @@ ALLOWED_DIFFICULTY = {"basic", "advanced"}
 VALID_TYPES = {"mcq", "ox", "short", "order", "steps", "match"}
 MATCH_MIN_PAIRS, MATCH_MAX_PAIRS = 2, 6
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
+# 문제 묶음(세트) 정의 파일. 문제 파일이 아니므로 기본 문제 파일 목록(*.yaml)에서 뺀다.
+SETS_FILE = "sets.yaml"
+SET_ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 # 폐기한 문제 ID와 폐기 이유. 폐기 번호 재사용 금지(guide.md ID 규칙)를 검증기가 강제한다.
 RETIRED_IDS = {
     "sip-0036": "sip-0035와 같은 사실(100 Trying의 의미)을 같은 방향으로 반복",
@@ -289,14 +293,91 @@ def _check_steps_items(errors, loc, field, items, actors):
                     )
 
 
+def question_files():
+    """레포 루트의 문제 파일 목록. 세트 정의 파일은 문제 파일이 아니라서 뺀다."""
+    return [p for p in sorted(glob.glob("*.yaml")) if p != SETS_FILE]
+
+
+def load_sets(path=SETS_FILE):
+    """세트 정의를 읽는다. 파일이 없으면 세트 없음(빈 리스트)."""
+    try:
+        with open(path, encoding="utf-8") as f:
+            data = yaml.safe_load(f)
+    except FileNotFoundError:
+        return []
+    except yaml.YAMLError as e:
+        raise SystemExit(f"[{path}] YAML 파싱 오류:\n{e}")
+    if data is None:
+        return []
+    if not isinstance(data, list):
+        raise SystemExit(f"[{path}] 최상위는 리스트여야 함")
+    return data
+
+
+def validate_sets(sets, question_ids):
+    """세트 정의를 검사하고 include를 풀어 [{id, name, ids}] 목록을 돌려준다.
+
+    세트는 ids(문제 ID 목록)나 include(다른 세트 ID 목록) 중 하나 이상을 가진다.
+    include는 한 단계만 허용한다(include로 묶인 세트는 다시 include를 쓸 수 없음).
+    """
+    errors = []
+    by_id = {}
+    for i, st in enumerate(sets):
+        if not isinstance(st, dict):
+            errors.append(f"[세트 #{i + 1}] 매핑(dict)이 아님: {st!r}")
+            continue
+        sid = st.get("id")
+        loc = f"세트 {sid or '#' + str(i + 1)}"
+        if not isinstance(sid, str) or not SET_ID_RE.match(sid):
+            errors.append(f"[{loc}] id는 소문자·숫자·하이픈 문자열이어야 함 (예: csgn-paging)")
+            continue
+        if sid in by_id:
+            errors.append(f"[{loc}] 세트 id 중복")
+            continue
+        by_id[sid] = st
+        if not isinstance(st.get("name"), str) or not st["name"].strip():
+            errors.append(f"[{loc}] name(화면에 보일 이름)이 비어 있음")
+        unknown = set(st) - {"id", "name", "ids", "include"}
+        if unknown:
+            errors.append(f"[{loc}] 알 수 없는 필드: {sorted(unknown)}")
+        if "ids" not in st and "include" not in st:
+            errors.append(f"[{loc}] ids나 include 중 하나는 있어야 함")
+        for field in ("ids", "include"):
+            if field in st and (not isinstance(st[field], list) or not st[field]
+                                or not all(isinstance(x, str) for x in st[field])):
+                errors.append(f"[{loc}] {field}는 비어 있지 않은 문자열 리스트여야 함")
+        for qid in st.get("ids") or []:
+            if isinstance(qid, str) and qid not in question_ids:
+                errors.append(f"[{loc}] 없는 문제 id: {qid}")
+        ids = st.get("ids") or []
+        dup = sorted({x for x in ids if ids.count(x) > 1})
+        if dup:
+            errors.append(f"[{loc}] ids 안에 중복: {dup}")
+
+    resolved = []
+    for sid, st in by_id.items():
+        ids = list(st.get("ids") or [])
+        for inc in st.get("include") or []:
+            if inc not in by_id:
+                errors.append(f"[세트 {sid}] include한 세트가 없음: {inc}")
+            elif inc == sid or by_id[inc].get("include"):
+                errors.append(f"[세트 {sid}] include는 한 단계만 허용 ({inc}는 자기 자신이거나 include를 가짐)")
+            else:
+                ids.extend(x for x in by_id[inc].get("ids") or [] if x not in ids)
+        resolved.append({"id": sid, "name": st.get("name"), "ids": ids})
+    return errors, resolved
+
+
 def main():
-    paths = sys.argv[1:] or sorted(glob.glob("*.yaml"))
+    paths = sys.argv[1:] or question_files()
     if not paths:
         print("검증할 YAML 파일이 없습니다.")
         sys.exit(1)
 
     questions = load_yaml_files(paths)
     errors = validate(questions)
+    set_errors, sets = validate_sets(load_sets(), {q.get("id") for q in questions})
+    errors += set_errors
 
     if errors:
         print(f"검증 실패: {len(errors)}개 오류\n")
@@ -304,7 +385,7 @@ def main():
             print(" -", e)
         sys.exit(1)
 
-    print(f"검증 통과: {len(questions)}개 문제, {len(paths)}개 파일")
+    print(f"검증 통과: {len(questions)}개 문제, {len(paths)}개 파일, 세트 {len(sets)}개")
     warnings = lint(questions)
     if warnings:
         print(f"\n경고 {len(warnings)}개 (빌드는 막지 않음)")

@@ -150,3 +150,29 @@ guide.md 열린 항목 1~5번을 진행했다. 모든 새 문제는 원문과 �
   Sh PUR(307)과 S6a PUR(321)의 약어 충돌 문제(diam-0033)도 넣었다.
 - [ ] **발견한 기존 문제(미수정).** 기존 Diameter 7문제의 `ref` 조항 번호가 TS 29.229 목차와
   맞지 않는다. guide.md 열린 항목 10번에 적었다.
+
+## 2026-11-06 (2) — C-SGN 업무용 EPC 문제와 문제 세트
+
+사용자가 C-SGN 장비 업무용으로 네 영역(등록·인증, 통신·페이징, 휴지, 업링크·다운링크)을 집중해서
+풀고 싶다고 요청했다. 사용자 결정 3건: 일반 EPC 절차에 CIoT 차이를 얹는 범위, `sets.yaml`로 문제 ID를
+묶는 세트 방식, `EPC` 주제 신설.
+
+- [x] **`EPC` 주제 신설.** `validator.py`의 `ALLOWED_TOPICS`에 `EPC`(접두어 `epc-`)를 추가했다.
+- [x] **EPC 문제 32개(epc-0001~0032, `epc.yaml`).** 모두 3GPP TS 23.401 Release 19(V19.6.0)와 대조했다.
+  - 등록·인증: C-SGN 정의(Annex L.4), PDN 없는 Attach, IMSI를 넣는 조건, 인증 생략 조건, M-TMSI,
+    Create Session, EMM/ECM 상태 짝맞추기.
+  - 통신·페이징: Network/UE triggered Service Request 흐름(order), DDN, 페이징 범위(TA 목록),
+    페이징 응답, extended buffering, eDRX 페이징 시점.
+  - 휴지: S1 release 흐름(order), User Inactivity, S-GW가 지우는 정보, 베어러 보존, eNodeB 컨텍스트,
+    PSM 진입·상태·깨어나는 조건.
+  - 업링크·다운링크: 하향이 열리는 시점(Modify Bearer), 업링크가 먼저 열림, 레퍼런스 포인트 짝맞추기,
+    GTP-U, Control Plane CIoT(NAS로 데이터 전송, S11-U, ROHC 위치, Release Assistance Information).
+- [x] **문제 세트 기능.** `sets.yaml`(ids, include 한 단계)을 추가했다. `validator.py`가 세트를 검증하고
+  `build.py`가 include를 풀어 HTML에 넣는다. 시작 화면 맨 위에 '세트' 줄이 생겼다. 세트는 C-SGN 전체와
+  영역별 4개(csgn-reg·csgn-paging·csgn-idle·csgn-data)다. 기존 ims-0018, diam-0034~0039도
+  csgn-reg에 넣었다.
+- [x] **화면 확인.** headless chromium 390px에 Windows 맑은 고딕을 연결해 한글까지 캡처했다. 세트 줄과
+  epc-0008·0016·0017 다이어그램을 확인했다. 4자 레인에서 긴 메시지 이름이 3~4줄로 접혀 겹쳐서,
+  order 조각 이름을 Req·Resp·Cmd·Cmpl 약어로 줄였다(해설에 약어 안내를 적음).
+- [ ] **보류(사용자 결정 필요).** order 레인 순서를 고정하는 `actors` 필드, ims-0018의 EPC 이동.
+  guide.md 열린 항목 11·12번.

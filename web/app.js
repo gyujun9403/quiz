@@ -1,6 +1,8 @@
 (function () {
   "use strict";
   var DATA = JSON.parse(document.getElementById("quiz-data").textContent);
+  // 문제 묶음(sets.yaml). 빌드 때 include를 풀어 [{id, name, ids}]로 넣어 둔다.
+  var SETS = JSON.parse(document.getElementById("sets-data").textContent);
   if (!DATA.length) {
     document.getElementById("app").textContent = "문제가 없습니다.";
     return;
@@ -13,12 +15,14 @@
   var DIFF_LABEL = { basic: "기본", advanced: "심화" };
   var TYPE_LABEL = { mcq: "객관식", ox: "O/X", short: "단답", order: "순서 나열", steps: "단계 완성", match: "짝맞추기" };
   var MODE_LABEL = { "__all__": "전체", quick: "짧은 문제", order: "순서 나열", steps: "단계 완성" };
-  var sel = { topic: "__all__", difficulty: "__all__", mode: "__all__" };
+  var sel = { set: "__all__", topic: "__all__", difficulty: "__all__", mode: "__all__" };
 
   var elHdr = document.getElementById("hdr");
   var elDeckChange = document.getElementById("deck-change");
   var elStart = document.getElementById("start");
   var elQuiz = document.getElementById("quiz");
+  var elSetGroup = document.getElementById("set-group");
+  var elPickSet = document.getElementById("pick-set");
   var elTopicGroup = document.getElementById("topic-group");
   var elModeGroup = document.getElementById("mode-group");
   var elPickTopic = document.getElementById("pick-topic");
@@ -633,9 +637,14 @@
     return DATA.some(function (q) { return modeOf(q) === m; });
   });
 
+  var setById = {};
+  SETS.forEach(function (s) { setById[s.id] = s; });
+
   function matching() {
+    var inSet = sel.set === "__all__" ? null : setById[sel.set].ids;
     return DATA.filter(function (q) {
-      return (sel.topic === "__all__" || q.topic === sel.topic) &&
+      return (!inSet || inSet.indexOf(q.id) !== -1) &&
+             (sel.topic === "__all__" || q.topic === sel.topic) &&
              (sel.difficulty === "__all__" || q.difficulty === sel.difficulty) &&
              (sel.mode === "__all__" || modeOf(q) === sel.mode);
     });
@@ -653,6 +662,7 @@
   }
 
   function refreshPicker() {
+    makeRow(elPickSet, "set", SETS.map(function (s) { return s.id; }), function (id) { return setById[id].name; });
     makeRow(elPickTopic, "topic", topicVals, function (t) { return t; });
     makeRow(elPickDiff, "difficulty", diffVals, function (d) { return DIFF_LABEL[d] || d; });
     makeRow(elPickMode, "mode", modeVals, function (m) { return MODE_LABEL[m]; });
@@ -662,7 +672,8 @@
   }
 
   function filterLabel() {
-    var parts = [sel.topic === "__all__" ? "전체" : sel.topic];
+    var parts = sel.set === "__all__" ? [] : [setById[sel.set].name];
+    parts.push(sel.topic === "__all__" ? "전체" : sel.topic);
     parts.push(sel.difficulty === "__all__" ? "전체" : DIFF_LABEL[sel.difficulty]);
     if (sel.mode !== "__all__") parts.push(MODE_LABEL[sel.mode]);
     return parts.join(" · ") + " ▾";
@@ -692,6 +703,8 @@
 
   // 주제가 하나뿐이면 '전체'와 중복이라 주제 선택 줄은 숨긴다.
   if (topicVals.length <= 1) elTopicGroup.hidden = true;
+  // 세트가 정의되지 않았으면 세트 선택 줄을 숨긴다.
+  if (!SETS.length) elSetGroup.hidden = true;
   // 유형 묶음이 하나뿐이면 '전체'와 중복이라 유형 선택 줄도 숨긴다.
   if (modeVals.length <= 1) elModeGroup.hidden = true;
 

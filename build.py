@@ -6,12 +6,12 @@
 로직은 전부 브라우저 JS에서 런타임에 처리한다. 화면 코드는 web/ 아래 세 파일
 (template.html 뼈대, style.css, app.js)에 있고, 빌드할 때 하나로 합친다.
 """
-import glob
 import json
 import os
 import sys
 
-from validator import lint, load_yaml_files, validate
+from validator import (lint, load_sets, load_yaml_files, question_files, validate,
+                       validate_sets)
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
@@ -29,6 +29,8 @@ def load_template():
 def build(paths, out_path):
     questions = load_yaml_files(paths)
     errors = validate(questions)
+    set_errors, sets = validate_sets(load_sets(), {q.get("id") for q in questions})
+    errors += set_errors
     if errors:
         print(f"검증 실패: {len(errors)}개 오류 — HTML을 생성하지 않습니다.\n")
         for e in errors:
@@ -41,13 +43,16 @@ def build(paths, out_path):
         q.pop("_file", None)
         clean.append(q)
 
-    data_json = json.dumps(clean, ensure_ascii=False).replace("</", "<\\/")
-    html = load_template().replace("__QUIZ_DATA__", data_json)
+    def to_json(obj):
+        return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
+    html = (load_template()
+            .replace("__QUIZ_DATA__", to_json(clean))
+            .replace("__SETS_DATA__", to_json(sets)))
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"생성 완료: {out_path} ({len(clean)}문제, {len(paths)}개 파일)")
+    print(f"생성 완료: {out_path} ({len(clean)}문제, {len(paths)}개 파일, 세트 {len(sets)}개)")
     for w in lint(questions):
         print(" 경고:", w)
 
@@ -63,7 +68,7 @@ def main():
         else:
             paths.append(a)
     if not paths:
-        paths = sorted(glob.glob("*.yaml"))
+        paths = question_files()
     if not paths:
         print("변환할 YAML 파일이 없습니다.")
         sys.exit(1)

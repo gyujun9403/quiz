@@ -117,3 +117,36 @@ Claude Code는 이 파일을 자동으로 읽지 않는다. 과거 결정의 경
   보류했다. 저장된 GitHub 토큰에 `workflow` 권한이 없어 push가 거부되었다. 로컬 `ci-check`
   브랜치에 있다.
 - [x] guide.md의 낡은 서술(배포 방식, steps decoy 구조, 열린 항목)을 실제 상태에 맞췄다.
+
+## 2026-11-06
+
+guide.md 열린 항목 1~5번을 진행했다. 모든 새 문제는 원문과 대조했다. SIP는 RFC 3261·3665·2617,
+3GPP는 ETSI에서 받은 Release 19 규격(TS 23.401·29.228·29.229·29.230·29.214·29.328·29.329·
+29.272·33.401)이다.
+
+- [x] **주제 배치 결정** (사용자 결정). EPC 문제를 위해 새 주제를 만들지 않았다. S6a/S13 커맨드
+  문제는 `Diameter`에, LTE 접속 전체 흐름(steps)은 `IMS`에 넣었다.
+- [x] **1번 기본 콜 플로우.** 407 인증 챌린지 INVITE 흐름(sip-0065, RFC 3665 §3.2)과 re-INVITE
+  흐름(sip-0066, RFC 3665 §3.7)을 order로 추가했다. re-INVITE 개념 문제 4개(sip-0067~0071:
+  정의, 누가 보내는가, 488 거절 시 세션 유지, 491 glare, 포킹 안 됨)도 추가했다.
+- [x] **2번 SIP 헤더·인증·전송·흐름.**
+  - 인증 6개(sip-0072~0077). 인증 헤더 4종 짝맞추기, 재요청 시 CSeq 증가, CANCEL 챌린지 금지,
+    Digest response, stale=true, Digest가 제공하지 않는 것.
+  - 전송 5개(sip-0078~0082). 기본 포트 5060/5061, 1300바이트 규칙, received 파라미터,
+    TCP의 Content-Length 필수.
+  - 트랜잭션·다이얼로그 10개(sip-0083~0092). 2xx ACK와 비-2xx ACK, 2xx 재전송, early 다이얼로그,
+    포킹 시 다중 2xx, ACK에 담는 answer, Timer B→408, T1, BYE 불일치→481, CANCEL hop-by-hop,
+    착신자의 early BYE 금지.
+  - 원문 메시지 3개(sip-0093~0095). RFC 3261 §24.2의 F8(180), F12(ACK), F13(BYE)을 썼다.
+- [x] **3번 다중 actor 렌더링.** headless chromium(390px)을 DevTools 프로토콜로 조작해
+  diam-0001(3-actor)과 ims-0018(4-actor)을 끝까지 풀고 캡처했다. 가로 넘침은 없었다.
+  좁은 레인에서 두 줄로 접힌 라벨("Attach Request" 등)의 둘째 줄이 화살표를 가렸다.
+  `web/style.css`의 `.diagram-msg`를 화살표 바로 위에 붙도록(`bottom: 24px`) 바꿔 라벨이 위로
+  늘어나게 했다. 실제 iPhone 확인은 남아 있다.
+- [x] **4번 EPC 트랙(1차).** LTE 첫 접속 서사 ims-0018(steps, UE·MME·HSS·S-GW)을 추가했다.
+  S6a/S13 문제 diam-0034~0039(AIR/ULR 흐름, AIR, ULR, ECR, CLR, XRES)도 추가했다.
+- [x] **5번 Diameter 심화.** Cx RTR 흐름·RTR·PPR·SAR 해제 유형 2개(diam-0025~0029),
+  Rx RAR 흐름·RAR과 ASR 구분(diam-0030~0031), Sh PUR(diam-0032)을 추가했다.
+  Sh PUR(307)과 S6a PUR(321)의 약어 충돌 문제(diam-0033)도 넣었다.
+- [ ] **발견한 기존 문제(미수정).** 기존 Diameter 7문제의 `ref` 조항 번호가 TS 29.229 목차와
+  맞지 않는다. guide.md 열린 항목 10번에 적었다.

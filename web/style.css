@@ -229,7 +229,8 @@
   .diagram-row { position: absolute; left: 0; right: 0; height: 44px; }
   .diagram-msg {
     position: absolute;
-    top: 2px;
+    bottom: 24px; /* 화살표(top 22px) 바로 위에 붙여, 라벨이 두 줄이면 위쪽으로 늘어나게 한다 */
+    line-height: 1.25;
     text-align: center;
     color: var(--muted);
     background: var(--card);

@@ -297,3 +297,51 @@
     맞다. CSCF 간 SIP 구간은 Mw다. UE↔P-CSCF는 Gm, CSCF↔HSS는 Cx로, 같은 SIP라도
     구간마다 레퍼런스 포인트 이름이 다르다.
   ref: "3GPP TS 23.228 (레퍼런스 포인트)"
+
+# ---------------- EPC 접속 서사 (IMS 등록 앞단) ----------------
+# 핸드폰을 켜면 LTE 망 접속(EPC Attach)이 먼저 끝나야 IMS 등록(ims-0001)을 할 수 있다.
+# 흐름은 3GPP TS 23.401 §5.3.2.1(Figure 5.3.2.1-1), S6a 커맨드는 TS 29.272에 대조.
+# 폰 렌더링을 고려해 eNodeB·P-GW lifeline은 빼고 explain에 적는다.
+
+- id: ims-0018
+  type: steps
+  topic: IMS
+  difficulty: advanced
+  tags: [message-flow, concept]
+  question: "핸드폰을 켜서 LTE 망에 처음 접속(EPC Attach)할 때의 전체 절차를, 각 단계의 대상(누가→누구)과 동작을 골라 순서대로 완성하라."
+  actors: ["UE", "MME", "HSS", "S-GW"]
+  steps:
+    - {from: "UE", to: "MME", act: "Attach Request"}
+    - {from: "MME", to: "HSS", act: "AIR/AIA", rt: true}
+    - {from: "MME", to: "UE", act: "인증요청/인증응답", rt: true}
+    - {from: "MME", to: "HSS", act: "ULR/ULA", rt: true}
+    - {from: "MME", to: "S-GW", act: "Create Session Req/Resp", rt: true}
+    - {from: "MME", to: "UE", act: "Attach Accept"}
+    - {from: "UE", to: "MME", act: "Attach Complete"}
+    - {from: "MME", to: "S-GW", act: "Modify Bearer Req/Resp", rt: true}
+  decoys:
+    - {from: "MME", to: "HSS", act: "PUR/PUA"}
+    - {from: "S-CSCF", to: "HSS", act: "SAR/SAA"}
+    - {from: "UE", to: "MME", act: "Detach Request"}
+  glossary:
+    "Attach Request": "NAS Attach Request · UE가 망 접속을 요청(IMSI 또는 이전 GUTI 포함)"
+    "AIR/AIA": "Authentication-Information-Request/Answer · S6a · MME가 HSS에서 인증 벡터를 받음"
+    "인증요청/인증응답": "EPS AKA · MME가 RAND·AUTN을 보내고, UE가 RES로 응답(MME가 XRES와 비교)"
+    "ULR/ULA": "Update-Location-Request/Answer · S6a · MME가 서빙 MME로 등록하고 가입자 데이터를 받음"
+    "Create Session Req/Resp": "GTP Create Session · MME가 S-GW(→P-GW)에 기본 베어러 생성을 요청"
+    "Attach Accept": "NAS Attach Accept · MME가 접속 수락(eNodeB에 보내는 Initial Context Setup에 실림)"
+    "Attach Complete": "NAS Attach Complete · UE가 접속 완료를 알림"
+    "Modify Bearer Req/Resp": "GTP Modify Bearer · MME가 S-GW에 eNodeB 주소를 알려 하향 경로를 완성"
+    "PUR/PUA": "Purge-UE-Request/Answer · S6a · MME가 가입자 정보 삭제를 HSS에 알림(접속 아님)"
+    "SAR/SAA": "Server-Assignment-Request/Answer · Cx · IMS 등록 단계(EPC 접속 아님)"
+    "Detach Request": "NAS Detach Request · 망 접속 해제(접속 아님)"
+  explain: |
+    Attach는 인증 → 위치 등록 → 기본 베어러 생성 → 수락 순서다.
+    MME는 AIR/AIA로 받은 인증 벡터로 UE와 EPS AKA를 한다. 인증이 끝나면 ULR/ULA로 HSS에 서빙 MME로 등록한다.
+    가입자 데이터를 받은 MME는 Create Session으로 S-GW·P-GW에 기본 베어러를 만든다.
+    그다음 Attach Accept를 보내고, UE의 Attach Complete를 받으면 Modify Bearer로 하향 경로를 완성한다.
+    IMS의 MAR(인증)→SAR(등록)과 같은 인증→등록 구조다. 이 접속이 끝나야 IMS 등록(ims-0001)이 이어진다.
+    다이어그램에서 생략한 부분이 있다. UE↔MME의 NAS 메시지는 실제로 eNodeB를 거친다.
+    S-GW는 Create Session을 P-GW로 넘긴다.
+    MME가 EIR에 ECR/ECA로 단말을 확인하는 단계(5b)는 선택 사항이라 넣지 않았다.
+  ref: "3GPP TS 23.401 §5.3.2.1 (Figure 5.3.2.1-1); TS 29.272 §5.2.1.1, §5.2.3.1; TS 33.401 §6.1.1"

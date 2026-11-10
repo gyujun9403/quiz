@@ -320,29 +320,48 @@
   .concept-nav .secondary { flex: 1; color: var(--accent); border-color: var(--accent); }
   .concept-nav .secondary:disabled { opacity: 0.35; }
   .concept-pos { font-size: 13px; color: var(--muted); min-width: 52px; text-align: center; }
-  .concept-tools { display: flex; gap: 8px; margin-bottom: 12px; }
-  .concept-tools .secondary { flex: 1; }
-  .concept-sheet-btn.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
-  /* 단계 설명·용어집 시트: 화면 아래 절반. 위쪽 그림과 나란히 비교한다 */
-  body.sheet-open { padding-bottom: 52vh; }
-  .sheet {
+  /* 단계 설명·용어집 옆 패널과, 여는 탭(화면 오른쪽 가장자리 고정) */
+  .edge-tabs {
     position: fixed;
-    left: 0;
+    right: 0;
+    top: 38%;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    z-index: 8;
+  }
+  .edge-tabs[hidden] { display: none; }
+  .edge-tab {
+    padding: 12px 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: #fff;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px 0 0 10px;
+    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+  }
+  body.drawer-open { overflow: hidden; }
+  .drawer-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 9; }
+  .drawer-backdrop[hidden] { display: none; }
+  .drawer {
+    position: fixed;
+    top: 0;
     right: 0;
     bottom: 0;
-    height: 50vh;
-    max-width: 600px;
-    margin: 0 auto;
+    width: min(86vw, 400px);
     display: flex;
     flex-direction: column;
     background: var(--card);
     color: var(--fg);
-    border-top: 1px solid var(--accent);
-    border-radius: 14px 14px 0 0;
-    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.2);
-    z-index: 9;
+    border-left: 1px solid var(--accent);
+    box-shadow: -4px 0 18px rgba(0, 0, 0, 0.25);
+    z-index: 10;
+    animation: drawer-in 0.18s ease-out;
   }
-  .sheet[hidden] { display: none; }
+  .drawer[hidden] { display: none; }
+  @keyframes drawer-in { from { transform: translateX(100%); } to { transform: none; } }
   .sheet-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; border-bottom: 1px solid var(--border); }
   .sheet-tabs { flex: 1; display: flex; gap: 6px; }
   .sheet-tab { font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); }

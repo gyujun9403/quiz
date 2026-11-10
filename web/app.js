@@ -817,8 +817,9 @@
 
   // ---- 개념 페이지 ----
   // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 카드는 절차 요약 1장과 흐름 그림 1장씩이다.
-  // 단계 설명과 용어집은 화면 아래 절반을 차지하는 시트로 열어, 위쪽 그림과 나란히 비교하며 본다.
-  // 화살표를 탭하면 그 단계 설명으로, 설명을 탭하면 그 화살표로 서로 강조한다.
+  // 단계 설명과 용어집은 오른쪽에서 나오는 옆 패널로 연다. 여는 탭은 화면 오른쪽 가장자리에 고정해
+  // 스크롤 위치와 상관없이 바로 열 수 있다. 패널이 그림을 가리므로 화살표를 탭하면 패널이 열리며
+  // 그 단계 설명이 강조되고, 설명을 탭하면 패널이 닫히며 그 화살표가 강조된 곳으로 스크롤한다.
   // include로 묶은 세트는 위쪽 탭으로 묶인 세트를 고르고, 마지막 카드에서 다음 세트로 넘어간다.
   var qById = {};
   DATA.forEach(function (q) { qById[q.id] = q; });
@@ -826,6 +827,9 @@
   var elSheet = document.getElementById("sheet");
   var elSheetTabs = document.getElementById("sheet-tabs");
   var elSheetBody = document.getElementById("sheet-body");
+  var elEdgeTabs = document.getElementById("edge-tabs");
+  var elBackdrop = document.getElementById("sheet-backdrop");
+  elBackdrop.addEventListener("click", function () { cState.sheet = null; drawConcept(false); });
 
   function cardsOf(pg) {
     var cards = [{ kind: "summary" }];
@@ -868,7 +872,7 @@
       cState.sheet = "notes";
       drawConcept(false);
     }, cState.hl));
-    box.appendChild(el("div", { cls: "concept-hint", text: "화살표를 탭하면 그 단계 설명이 열린다" }));
+    box.appendChild(el("div", { cls: "concept-hint", text: "화살표를 탭하면 그 단계 설명이 열린다 · 오른쪽 탭으로 설명·용어집" }));
     return box;
   }
 
@@ -922,10 +926,10 @@
     nav.appendChild(next);
     elConceptBody.appendChild(nav);
 
-    var tools = el("div", { cls: "concept-tools" });
-    if (cur.card.kind === "flow") tools.appendChild(sheetButton("notes", "단계 설명 ▲"));
-    tools.appendChild(sheetButton("terms", "용어집 ▲"));
-    elConceptBody.appendChild(tools);
+    // 오른쪽 가장자리 고정 탭. 단계 설명은 흐름 카드에서만 연다.
+    elEdgeTabs.innerHTML = "";
+    if (cur.card.kind === "flow") elEdgeTabs.appendChild(sheetButton("notes", "설명"));
+    elEdgeTabs.appendChild(sheetButton("terms", "용어"));
 
     drawSheet();
     if (toTop) window.scrollTo(0, 0);
@@ -933,7 +937,7 @@
   }
 
   function sheetButton(kind, label) {
-    var b = el("button", { cls: "secondary concept-sheet-btn" + (cState.sheet === kind ? " on" : ""), text: label });
+    var b = el("button", { cls: "edge-tab", text: label });
     b.addEventListener("click", function () {
       cState.sheet = cState.sheet === kind ? null : kind;
       drawConcept(false);
@@ -941,12 +945,13 @@
     return b;
   }
 
-  // 시트를 열면 본문 아래에 시트 높이만큼 여백을 줘서, 그림을 시트 위쪽으로 스크롤할 수 있게 한다.
   function drawSheet() {
     var cur = curCard();
     var open = !!cState.sheet && !elConcept.hidden;
     elSheet.hidden = !open;
-    document.body.classList.toggle("sheet-open", open);
+    elBackdrop.hidden = !open;
+    elEdgeTabs.hidden = open || elConcept.hidden;
+    document.body.classList.toggle("drawer-open", open);
     if (!open) return;
 
     elSheetTabs.innerHTML = "";
@@ -971,12 +976,14 @@
         var li = el("li", { cls: i === cState.hl ? "on" : "" });
         li.appendChild(el("div", { cls: "note-msg", text: (i + 1) + ". " + fr.rows[i].msg }));
         li.appendChild(el("div", { text: note }));
-        li.addEventListener("click", function () { cState.hl = i; drawConcept(false); });
+        // 설명을 탭하면 패널을 닫고 그림에서 그 화살표를 보여준다.
+        li.addEventListener("click", function () { cState.hl = i; cState.sheet = null; drawConcept(false); });
         list.appendChild(li);
       });
       elSheetBody.appendChild(list);
+      elSheetBody.appendChild(el("div", { cls: "concept-hint", text: "설명을 탭하면 그림에서 그 화살표를 보여준다" }));
       var on = list.querySelector("li.on");
-      if (on) on.scrollIntoView({ block: "nearest" });
+      if (on) on.scrollIntoView({ block: "center" });
     } else {
       var terms = el("div", { cls: "sheet-terms" });
       cur.pg.terms.forEach(function (t, i) {
@@ -1001,13 +1008,13 @@
     }
   }
 
-  // 강조한 화살표가 시트에 가려지지 않게 화면 위쪽 영역으로 스크롤한다.
+  // 강조한 화살표가 화면 밖에 있으면 화면 위쪽 1/3쯤으로 스크롤한다.
   function revealHighlightedRow() {
+    if (cState.sheet) return;
     var row = elConceptBody.querySelector(".diagram-row.hl");
     if (!row) return;
     var r = row.getBoundingClientRect();
-    var visibleBottom = cState.sheet ? window.innerHeight * 0.45 : window.innerHeight;
-    if (r.top < 0 || r.bottom > visibleBottom) window.scrollBy(0, r.top - window.innerHeight * 0.15);
+    if (r.top < 0 || r.bottom > window.innerHeight) window.scrollBy(0, r.top - window.innerHeight * 0.3);
   }
 
   function showConcept() {
@@ -1021,7 +1028,9 @@
   function closeSheet() {
     cState.sheet = null;
     elSheet.hidden = true;
-    document.body.classList.remove("sheet-open");
+    elBackdrop.hidden = true;
+    elEdgeTabs.hidden = true;
+    document.body.classList.remove("drawer-open");
   }
   document.getElementById("sheet-close").addEventListener("click", function () {
     cState.sheet = null;

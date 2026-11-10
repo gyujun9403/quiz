@@ -816,27 +816,42 @@
   }
 
   // ---- 개념 페이지 ----
-  // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 스크롤 대신 카드 넘기기로 본다.
-  // 카드 순서: 절차 요약 → 흐름 그림(가리킨 order/steps 문제의 정답 흐름) → 용어 하나씩.
+  // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 카드는 절차 요약 1장과 흐름 그림 1장씩이다.
+  // 단계 설명과 용어집은 화면 아래 절반을 차지하는 시트로 열어, 위쪽 그림과 나란히 비교하며 본다.
+  // 화살표를 탭하면 그 단계 설명으로, 설명을 탭하면 그 화살표로 서로 강조한다.
   // include로 묶은 세트는 위쪽 탭으로 묶인 세트를 고르고, 마지막 카드에서 다음 세트로 넘어간다.
   var qById = {};
   DATA.forEach(function (q) { qById[q.id] = q; });
-  var cState = { pages: [], p: 0, c: 0, list: false };
+  var cState = { pages: [], p: 0, c: 0, sheet: null, hl: -1, open: {} };
+  var elSheet = document.getElementById("sheet");
+  var elSheetTabs = document.getElementById("sheet-tabs");
+  var elSheetBody = document.getElementById("sheet-body");
 
   function cardsOf(pg) {
     var cards = [{ kind: "summary" }];
     (pg.flows || []).forEach(function (fl, i) {
       cards.push({ kind: "flow", fl: fl, n: i + 1, of: pg.flows.length });
     });
-    pg.terms.forEach(function (t, i) { cards.push({ kind: "term", t: t, n: i + 1, of: pg.terms.length }); });
     return cards;
   }
 
-  function flowDiagram(q) {
+  // 흐름 그림의 화살표 목록. 강조를 화살표 단위로 하려고 stepIdx에 화살표 번호를 넣는다.
+  function flowActorsRows(q) {
+    var actors, rows;
     if (q.type === "steps") {
-      return renderDiagram(q.actors || collectActors(q.steps), expandStepRows(q.steps, q.steps.length), null);
+      actors = q.actors || collectActors(q.steps);
+      rows = expandStepRows(q.steps, q.steps.length);
+    } else {
+      actors = collectActors(q.items);
+      rows = q.items;
     }
-    return renderDiagram(collectActors(q.items), q.items, null);
+    rows = rows.map(function (r, i) { return { msg: r.msg, from: r.from, to: r.to, stepIdx: i }; });
+    return { actors: actors, rows: rows };
+  }
+
+  function curCard() {
+    var pg = cState.pages[cState.p];
+    return { pg: pg, card: cardsOf(pg)[cState.c], len: cardsOf(pg).length };
   }
 
   function cardNode(pg, card) {
@@ -844,16 +859,16 @@
     if (card.kind === "summary") {
       box.appendChild(el("div", { cls: "order-label", text: "절차 요약" }));
       box.appendChild(el("p", { cls: "concept-summary", text: pg.summary.trim() }));
-    } else if (card.kind === "flow") {
-      box.appendChild(el("div", { cls: "order-label", text: "흐름 " + card.n + "/" + card.of + " · " + card.fl.title }));
-      box.appendChild(flowDiagram(qById[card.fl.id]));
-    } else {
-      box.appendChild(el("div", { cls: "order-label", text: "용어 " + card.n + "/" + card.of }));
-      box.appendChild(el("div", { cls: "card-term", text: card.t.term }));
-      if (card.t.full) box.appendChild(el("div", { cls: "card-full", text: card.t.full }));
-      box.appendChild(el("p", { cls: "card-desc", text: card.t.desc }));
-      box.appendChild(el("div", { cls: "term-ref", text: card.t.ref }));
+      return box;
     }
+    box.appendChild(el("div", { cls: "order-label", text: "흐름 " + card.n + "/" + card.of + " · " + card.fl.title }));
+    var fr = flowActorsRows(qById[card.fl.id]);
+    box.appendChild(renderDiagram(fr.actors, fr.rows, function (idx) {
+      cState.hl = idx;
+      cState.sheet = "notes";
+      drawConcept(false);
+    }, cState.hl));
+    box.appendChild(el("div", { cls: "concept-hint", text: "화살표를 탭하면 그 단계 설명이 열린다" }));
     return box;
   }
 
@@ -866,75 +881,155 @@
       if (cState.c > 0) cState.c--;
       else if (cState.p > 0) { cState.p--; cState.c = cardsOf(cState.pages[cState.p]).length - 1; }
     }
-    drawConcept();
+    cState.hl = -1;
+    if (cState.sheet === "notes" && curCard().card.kind !== "flow") cState.sheet = null;
+    drawConcept(true);
   }
 
-  function drawConcept() {
+  function drawConcept(toTop) {
     var pages = cState.pages;
-    var pg = pages[cState.p];
-    var cards = cardsOf(pg);
+    var cur = curCard();
     elConceptBody.innerHTML = "";
 
     if (pages.length > 1) {
       var tabs = el("div", { cls: "picker-row concept-tabs" });
       pages.forEach(function (p, i) {
         var b = el("button", { cls: "pick-btn" + (i === cState.p ? " sel" : ""), text: p.name });
-        b.addEventListener("click", function () { cState.p = i; cState.c = 0; cState.list = false; drawConcept(); });
+        b.addEventListener("click", function () {
+          cState.p = i; cState.c = 0; cState.hl = -1;
+          if (cState.sheet === "notes") cState.sheet = null;
+          drawConcept(true);
+        });
         tabs.appendChild(b);
       });
       elConceptBody.appendChild(tabs);
     }
-    elConceptBody.appendChild(el("h2", { cls: "concept-title", text: pg.name }));
+    elConceptBody.appendChild(el("h2", { cls: "concept-title", text: cur.pg.name }));
+    elConceptBody.appendChild(cardNode(cur.pg, cur.card));
 
-    var toggle = el("button", { cls: "secondary concept-toggle", text: cState.list ? "카드로 보기" : "용어 목록" });
-    toggle.addEventListener("click", function () { cState.list = !cState.list; drawConcept(); });
+    var first = cState.p === 0 && cState.c === 0;
+    var last = cState.p === pages.length - 1 && cState.c === cur.len - 1;
+    var nav = el("div", { cls: "concept-nav" });
+    var prev = el("button", { cls: "secondary", text: "◀ 이전" });
+    prev.disabled = first;
+    prev.addEventListener("click", function () { moveCard(-1); });
+    var pos = el("span", { cls: "concept-pos", text: (cState.c + 1) + " / " + cur.len });
+    var next = el("button", { cls: "secondary", text: cState.c === cur.len - 1 && !last ? "다음 세트 ▶" : "다음 ▶" });
+    next.disabled = last;
+    next.addEventListener("click", function () { moveCard(1); });
+    nav.appendChild(prev);
+    nav.appendChild(pos);
+    nav.appendChild(next);
+    elConceptBody.appendChild(nav);
 
-    if (cState.list) {
-      // 용어 목록: 탭하면 그 용어 카드로 이동한다.
-      var list = el("dl", { cls: "concept-terms" });
-      pg.terms.forEach(function (t, i) {
-        var dt = el("dt", { cls: "tappable-term", text: t.term });
-        if (t.full) dt.appendChild(el("span", { cls: "term-full", text: t.full }));
-        dt.addEventListener("click", function () {
-          cState.c = 1 + (pg.flows || []).length + i;
-          cState.list = false;
-          drawConcept();
-        });
-        list.appendChild(dt);
-        list.appendChild(el("dd", { text: t.desc }));
-      });
-      elConceptBody.appendChild(toggle);
-      elConceptBody.appendChild(list);
-    } else {
-      elConceptBody.appendChild(cardNode(pg, cards[cState.c]));
-      var first = cState.p === 0 && cState.c === 0;
-      var last = cState.p === pages.length - 1 && cState.c === cards.length - 1;
-      var nav = el("div", { cls: "concept-nav" });
-      var prev = el("button", { cls: "secondary", text: "◀ 이전" });
-      prev.disabled = first;
-      prev.addEventListener("click", function () { moveCard(-1); });
-      var pos = el("span", { cls: "concept-pos", text: (cState.c + 1) + " / " + cards.length });
-      var next = el("button", { cls: "secondary", text: cState.c === cards.length - 1 && !last ? "다음 세트 ▶" : "다음 ▶" });
-      next.disabled = last;
-      next.addEventListener("click", function () { moveCard(1); });
-      nav.appendChild(prev);
-      nav.appendChild(pos);
-      nav.appendChild(next);
-      elConceptBody.appendChild(nav);
-      elConceptBody.appendChild(toggle);
+    var tools = el("div", { cls: "concept-tools" });
+    if (cur.card.kind === "flow") tools.appendChild(sheetButton("notes", "단계 설명 ▲"));
+    tools.appendChild(sheetButton("terms", "용어집 ▲"));
+    elConceptBody.appendChild(tools);
+
+    drawSheet();
+    if (toTop) window.scrollTo(0, 0);
+    else revealHighlightedRow();
+  }
+
+  function sheetButton(kind, label) {
+    var b = el("button", { cls: "secondary concept-sheet-btn" + (cState.sheet === kind ? " on" : ""), text: label });
+    b.addEventListener("click", function () {
+      cState.sheet = cState.sheet === kind ? null : kind;
+      drawConcept(false);
+    });
+    return b;
+  }
+
+  // 시트를 열면 본문 아래에 시트 높이만큼 여백을 줘서, 그림을 시트 위쪽으로 스크롤할 수 있게 한다.
+  function drawSheet() {
+    var cur = curCard();
+    var open = !!cState.sheet && !elConcept.hidden;
+    elSheet.hidden = !open;
+    document.body.classList.toggle("sheet-open", open);
+    if (!open) return;
+
+    elSheetTabs.innerHTML = "";
+    var kinds = cur.card.kind === "flow" ? [["notes", "단계 설명"], ["terms", "용어집"]] : [["terms", "용어집"]];
+    kinds.forEach(function (k) {
+      var b = el("button", { cls: "sheet-tab" + (cState.sheet === k[0] ? " on" : ""), text: k[1] });
+      b.addEventListener("click", function () { cState.sheet = k[0]; drawConcept(false); });
+      elSheetTabs.appendChild(b);
+    });
+
+    elSheetBody.innerHTML = "";
+    // 탭이나 카드가 바뀌면 시트 스크롤을 맨 위로 되돌린다(이전 탭의 스크롤 위치가 남지 않게).
+    var where = cState.sheet + "@" + cState.p + ":" + cState.c;
+    if (elSheetBody.getAttribute("data-where") !== where) {
+      elSheetBody.scrollTop = 0;
+      elSheetBody.setAttribute("data-where", where);
     }
-    window.scrollTo(0, 0);
+    if (cState.sheet === "notes") {
+      var fr = flowActorsRows(qById[cur.card.fl.id]);
+      var list = el("ol", { cls: "sheet-notes" });
+      cur.card.fl.notes.forEach(function (note, i) {
+        var li = el("li", { cls: i === cState.hl ? "on" : "" });
+        li.appendChild(el("div", { cls: "note-msg", text: (i + 1) + ". " + fr.rows[i].msg }));
+        li.appendChild(el("div", { text: note }));
+        li.addEventListener("click", function () { cState.hl = i; drawConcept(false); });
+        list.appendChild(li);
+      });
+      elSheetBody.appendChild(list);
+      var on = list.querySelector("li.on");
+      if (on) on.scrollIntoView({ block: "nearest" });
+    } else {
+      var terms = el("div", { cls: "sheet-terms" });
+      cur.pg.terms.forEach(function (t, i) {
+        var key = cState.p + ":" + i;
+        var item = el("div", { cls: "sheet-term" + (cState.open[key] ? " on" : "") });
+        var head = el("button", { cls: "sheet-term-head", text: (cState.open[key] ? "▾ " : "▸ ") + t.term });
+        if (t.full) head.appendChild(el("span", { cls: "term-full", text: t.full }));
+        head.addEventListener("click", function () {
+          cState.open[key] = !cState.open[key];
+          var y = elSheetBody.scrollTop;
+          drawSheet();
+          elSheetBody.scrollTop = y;
+        });
+        item.appendChild(head);
+        if (cState.open[key]) {
+          item.appendChild(el("div", { cls: "sheet-term-desc", text: t.desc }));
+          item.appendChild(el("div", { cls: "term-ref", text: t.ref }));
+        }
+        terms.appendChild(item);
+      });
+      elSheetBody.appendChild(terms);
+    }
+  }
+
+  // 강조한 화살표가 시트에 가려지지 않게 화면 위쪽 영역으로 스크롤한다.
+  function revealHighlightedRow() {
+    var row = elConceptBody.querySelector(".diagram-row.hl");
+    if (!row) return;
+    var r = row.getBoundingClientRect();
+    var visibleBottom = cState.sheet ? window.innerHeight * 0.45 : window.innerHeight;
+    if (r.top < 0 || r.bottom > visibleBottom) window.scrollBy(0, r.top - window.innerHeight * 0.15);
   }
 
   function showConcept() {
-    cState = { pages: CONCEPTS[sel.set] || [], p: 0, c: 0, list: false };
+    cState = { pages: CONCEPTS[sel.set] || [], p: 0, c: 0, sheet: null, hl: -1, open: {} };
     if (!cState.pages.length) return;
     elStart.hidden = true;
     elConcept.hidden = false;
-    drawConcept();
+    drawConcept(true);
   }
 
+  function closeSheet() {
+    cState.sheet = null;
+    elSheet.hidden = true;
+    document.body.classList.remove("sheet-open");
+  }
+  document.getElementById("sheet-close").addEventListener("click", function () {
+    cState.sheet = null;
+    drawConcept(false);
+  });
+
   function showStart() {
+    closeSheet();
     elConcept.hidden = true;
     elQuiz.hidden = true;
     elHdr.hidden = true;
@@ -948,6 +1043,7 @@
     if (!POOL.length) return;
     deck = [];
     elStart.hidden = true;
+    closeSheet();
     elConcept.hidden = true;
     elQuiz.hidden = false;
     elHdr.hidden = false;

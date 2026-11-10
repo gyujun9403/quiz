@@ -314,23 +314,51 @@
   .concept-tabs { margin: 12px 0 4px; }
   .concept-tabs .pick-btn { font-size: 13px; padding: 6px 10px; }
   .concept-title { font-size: 18px; margin: 14px 0 10px; }
-  .concept-card { min-height: 300px; }
-  .card-term { font-size: 22px; font-weight: 700; margin: 18px 0 4px; }
-  .card-full { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
-  .card-desc { font-size: 16px; line-height: 1.7; margin: 0 0 12px; }
-  .concept-card .term-ref { display: block; font-size: 12px; color: var(--muted); }
+  .concept-card { min-height: 200px; }
+  .concept-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: -4px; }
   .concept-nav { display: flex; align-items: center; gap: 8px; margin: 14px 0 10px; }
   .concept-nav .secondary { flex: 1; color: var(--accent); border-color: var(--accent); }
   .concept-nav .secondary:disabled { opacity: 0.35; }
   .concept-pos { font-size: 13px; color: var(--muted); min-width: 52px; text-align: center; }
-  .concept-toggle { margin-bottom: 12px; }
-  .concept-terms .tappable-term { cursor: pointer; color: var(--accent); }
+  .concept-tools { display: flex; gap: 8px; margin-bottom: 12px; }
+  .concept-tools .secondary { flex: 1; }
+  .concept-sheet-btn.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  /* 단계 설명·용어집 시트: 화면 아래 절반. 위쪽 그림과 나란히 비교한다 */
+  body.sheet-open { padding-bottom: 52vh; }
+  .sheet {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    height: 50vh;
+    max-width: 600px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    background: var(--card);
+    color: var(--fg);
+    border-top: 1px solid var(--accent);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.2);
+    z-index: 9;
+  }
+  .sheet[hidden] { display: none; }
+  .sheet-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; border-bottom: 1px solid var(--border); }
+  .sheet-tabs { flex: 1; display: flex; gap: 6px; }
+  .sheet-tab { font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); }
+  .sheet-tab.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
+  .sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 12px 16px; }
+  .sheet-notes { list-style: none; margin: 0; padding: 0; }
+  .sheet-notes li { padding: 8px 10px; border-radius: 8px; font-size: 14px; line-height: 1.55; cursor: pointer; }
+  .sheet-notes li.on { background: var(--bg); outline: 1px solid var(--good-fg); }
+  .sheet-notes .note-msg { font-weight: 700; margin-bottom: 2px; }
+  .sheet-notes li.on .note-msg { color: var(--good-fg); }
+  .sheet-term { border-bottom: 1px solid var(--border); padding: 4px 0 8px; }
+  .sheet-term-head { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--fg); font-size: 15px; font-weight: 700; padding: 6px 0; cursor: pointer; }
+  .sheet-term-head .term-full { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
+  .sheet-term-desc { font-size: 14px; line-height: 1.55; }
+  .sheet-term .term-ref { font-size: 11px; color: var(--muted); margin-top: 2px; }
   .concept-summary { white-space: pre-line; line-height: 1.65; font-size: 15px; margin: 0 0 14px; }
-  .concept-terms { margin: 0; }
-  .concept-terms dt { font-weight: 700; margin-top: 12px; }
-  .concept-terms .term-full { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
-  .concept-terms dd { margin: 2px 0 0; line-height: 1.55; font-size: 14px; }
-  .concept-terms .term-ref { display: block; font-size: 11px; color: var(--muted); margin-top: 2px; }
   .linkbtn {
     background: none;
     border: none;

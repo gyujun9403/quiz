@@ -2,6 +2,7 @@
 # - set: sets.yaml의 세트 id(include로 묶은 세트에는 달지 않는다. 묶인 세트들의 페이지가 이어서 나온다).
 # - summary: 절차 요약. 한 줄에 한 문장.
 # - flows: 흐름 그림. order/steps 문제 id를 가리키면 그 문제의 정답 흐름을 그린다.
+#   notes: 화살표마다 하나씩 단계 설명(필수). 개수가 그림의 화살표 개수와 같아야 한다(rt 단계는 2개).
 # - terms: 용어 목록. term(용어), full(풀네임, 선택), desc(한두 문장 뜻), ref(근거 조항, 필수).
 #   match(선택): 문제 문장에서 밑줄을 그을 문자열. 없으면 term을 '/'·'·'로 나눈 조각과 full을 쓴다.
 # 문제와 같은 규율을 따른다. 규격 원문으로 확인한 내용만 적는다.
@@ -16,8 +17,29 @@
     등록이 끝난 단말은 EMM-REGISTERED 상태가 되고, MME가 할당한 임시 식별자 GUTI를 받는다.
     C-SGN은 MME·S-GW(필요하면 P-GW까지)를 한 장비에 합친 노드라서, 이 역할들이 한 장비 안에서 이루어진다.
   flows:
-    - {id: ims-0018, title: "LTE 첫 접속(Attach) 전체"}
-    - {id: diam-0034, title: "Attach 중 MME ↔ HSS (S6a)"}
+    - id: ims-0018
+      title: "LTE 첫 접속(Attach) 전체"
+      notes:
+        - "단말이 망 접속을 요청한다. 유효한 GUTI가 있으면 GUTI로, 없으면 IMSI로 자신을 알린다. 실제로는 eNodeB를 거쳐 MME로 간다."
+        - "MME가 HSS에 인증 벡터를 요청한다(S6a)."
+        - "HSS가 인증 벡터(RAND·XRES·AUTN·KASME)를 돌려준다."
+        - "MME가 RAND와 AUTN을 단말에 보낸다(EPS AKA)."
+        - "단말(USIM)이 AUTN으로 망을 확인하고 RES를 계산해 돌려준다. MME는 RES가 XRES와 같으면 인증 성공으로 본다."
+        - "MME가 HSS에 자신을 이 단말의 서빙 MME로 등록한다. 첫 접속이라는 표시(Initial-Attach-Indicator)를 넣는다."
+        - "HSS가 가입자 데이터(APN별 PDN 가입 정보, QoS)를 돌려준다. 단말이 이전 MME에 등록돼 있었다면 HSS는 그 전에 이전 MME에 CLR을 보낸다."
+        - "MME가 S-GW에 기본 베어러 생성을 요청한다. S-GW는 이 요청을 P-GW로 넘긴다."
+        - "P-GW가 단말 주소(PDN Address)를 할당하고 기본 베어러를 만든다. 응답은 S-GW를 거쳐 MME로 온다."
+        - "MME가 접속을 수락한다. GUTI와 TA 목록이 들어 있다. eNodeB에는 Initial Context Setup Request에 실려 간다."
+        - "단말이 무선 베어러를 세운 뒤 접속 완료를 알린다."
+        - "MME가 S-GW에 eNodeB 주소와 하향 TEID를 알려 준다."
+        - "S-GW가 응답한다. 이제 S-GW가 단말 쪽으로 하향 데이터를 보낼 수 있고, Attach가 끝난다."
+    - id: diam-0034
+      title: "Attach 중 MME ↔ HSS (S6a)"
+      notes:
+        - "AIR: MME가 HSS에 인증 정보를 요청한다. 단말 인증 전에 보낸다."
+        - "AIA: HSS가 E-UTRAN 인증 벡터(RAND·XRES·AUTN·KASME)를 돌려준다. MME는 이것으로 EPS AKA를 한다."
+        - "ULR: 인증이 끝나면 MME가 자신을 서빙 MME로 HSS에 등록한다."
+        - "ULA: HSS가 가입자 데이터를 돌려준다. MME는 이 데이터로 단말 컨텍스트를 만들고 기본 베어러 생성으로 넘어간다."
   terms:
     - {term: "C-SGN", full: "CIoT Serving Gateway Node", desc: "MME·S-GW·P-GW 같은 EPS 기능을 한 장비에 모은 결합 노드 구현 방식이다. 물리 장비 수를 줄이려는 CIoT 배포용이며, 소량 데이터 전송용 CIoT 최적화를 지원한다.", ref: "TS 23.401 Annex L.4"}
     - {term: "CIoT", full: "Cellular IoT", desc: "저복잡도·저속 IoT 단말을 위한 셀룰러 망 기능 전체를 부르는 말이다. NB-IoT가 여기에 속한다.", ref: "TS 23.401 §3.1"}
@@ -56,8 +78,23 @@
     절전 기능을 쓰는 CIoT 단말은 페이징을 바로 받지 못할 수 있다.
     eDRX 단말은 MME가 다음 페이징 시점 직전에 페이징하고, PSM 단말은 깨어날 때까지 S-GW가 데이터를 더 오래 버퍼링한다.
   flows:
-    - {id: epc-0008, title: "망이 시작하는 Service Request (DDN → Paging)"}
-    - {id: epc-0016, title: "단말이 시작하는 Service Request"}
+    - id: epc-0008
+      title: "망이 시작하는 Service Request (DDN → Paging)"
+      notes:
+        - "S-GW에 하향 데이터가 왔지만 단말 쪽 하향 TEID가 없다(휴지 상태). S-GW는 패킷을 버퍼링하고 MME에 알린다. 데이터가 온 베어러의 EPS Bearer ID와 ARP가 들어간다."
+        - "MME가 받았다고 답한다. 단말이 PSM·eDRX라 지금 깨울 수 없으면, 여기에 버퍼링을 더 오래 하라는 요청(extended buffering)을 넣는다."
+        - "MME가 단말이 등록된 TA 목록에 속한 각 eNodeB에 S1-AP Paging을 보낸다."
+        - "eNodeB가 무선으로 단말을 부른다."
+        - "단말이 Service Request로 응답한다. 이후 과정은 단말이 시작하는 Service Request와 같다."
+    - id: epc-0016
+      title: "단말이 시작하는 Service Request"
+      notes:
+        - "단말이 S-TMSI와 함께 NAS Service Request를 보낸다. eNodeB는 이것을 S1-AP Initial UE Message에 담아 MME로 넘긴다."
+        - "MME가 eNodeB에 S-GW 주소·상향 TEID·QoS·보안 정보를 준다. 필요하면 그 전에 인증·보안 절차를 한다."
+        - "eNodeB가 단말과 무선 베어러를 세운다. 이때부터 업링크 데이터가 S-GW로 갈 수 있다."
+        - "eNodeB가 자기 주소와 하향 TEID를 MME에 알린다."
+        - "MME가 그 정보를 S-GW에 넘긴다."
+        - "S-GW가 응답한다. 이제 다운링크도 흐른다."
   terms:
     - {term: "ECM-IDLE / ECM-CONNECTED", desc: "ECM은 신호 연결 여부를 나타낸다. IDLE이면 NAS 신호 연결이 없고 S1-MME·S1-U도 없다. CONNECTED면 RRC 연결과 S1-MME 연결로 된 신호 연결이 있고, MME가 단말 위치를 eNodeB 단위로 안다.", ref: "TS 23.401 §4.6.3"}
     - {term: "RRC", full: "Radio Resource Control", desc: "단말과 eNodeB 사이의 무선 제어 신호다. ECM-CONNECTED의 신호 연결은 RRC 연결과 S1-MME 연결 두 부분으로 이루어진다.", ref: "TS 23.401 §4.6.3.2"}
@@ -83,7 +120,15 @@
     CIoT 단말은 휴지 중 전력을 더 아끼려고 PSM이나 eDRX를 쓴다.
     PSM 단말은 휴지가 된 뒤 Active 타이머가 끝나면 무선 기능을 끄고, 그동안 페이징을 받지 않는다.
   flows:
-    - {id: epc-0017, title: "eNodeB가 시작하는 S1 release"}
+    - id: epc-0017
+      title: "eNodeB가 시작하는 S1 release"
+      notes:
+        - "eNodeB가 단말을 휴지 상태로 보내자고 요청한다. 흔한 원인은 일정 시간 데이터가 없는 User Inactivity다."
+        - "MME가 S-GW에 그 단말의 S1-U 베어러 해제를 요청한다."
+        - "S-GW가 eNodeB 주소와 TEID를 지우고 답한다. 자기 상향 TEID와 베어러는 유지하고, 이후 오는 하향 패킷은 버퍼링한다."
+        - "MME가 eNodeB에 단말 컨텍스트 해제를 지시한다."
+        - "eNodeB가 단말 무선 연결을 끊는다. 단말이 확인하면 eNodeB는 단말 컨텍스트를 지운다."
+        - "eNodeB가 해제를 확인한다. MME는 eNodeB 관련 정보만 지우고 나머지 단말 정보는 유지한다. 단말과 MME 모두 ECM-IDLE이 된다."
   terms:
     - {term: "S1 release", desc: "단말의 S1-AP 신호 연결과 모든 S1-U 베어러를 해제해 단말을 ECM-CONNECTED에서 ECM-IDLE로 보내는 절차다. eNodeB나 MME가 시작한다.", ref: "TS 23.401 §5.3.5"}
     - {term: "UE Context Release Request / Command / Complete", match: ["S1 UE Context Release Request", "S1 UE Context Release Command", "S1 UE Context Release Complete", "UE Context Release Request", "UE Context Release Command", "UE Context Release Complete", "UE Context Release"], desc: "S1 release의 S1-AP 메시지다. Request는 eNodeB가 해제를 요청할 때, Command는 MME가 해제를 지시할 때, Complete는 eNodeB가 해제를 확인할 때 보낸다. 퀴즈 조각에서는 S1 접두어를 빼고 Req·Cmd·Cmpl로 줄여 쓴다.", ref: "TS 23.401 §5.3.5 (1b, 4, 6단계)"}
@@ -109,7 +154,15 @@
     C-SGN이 쓰는 Control Plane CIoT 최적화는 이 사용자 평면을 쓰지 않는다.
     소량 데이터를 NAS 메시지에 담아 MME로 보내고, MME가 S11-U로 S-GW에 넘긴다.
   flows:
-    - {id: epc-0016, title: "Service Request에서 TEID가 오가는 순서"}
+    - id: epc-0016
+      title: "Service Request에서 TEID가 오가는 순서"
+      notes:
+        - "아직 사용자 평면이 없다. S-GW는 S1 release 때 eNodeB 쪽 TEID를 지웠고, 자기 상향 TEID만 갖고 있다."
+        - "MME가 보관하던 S-GW 주소와 상향 TEID를 eNodeB에 준다. TEID는 받는 쪽이 정하므로 상향 TEID는 S-GW가 정한 값이다."
+        - "무선 베어러가 서면 eNodeB가 상향 TEID를 붙여 업링크 패킷을 S-GW로 보낼 수 있다. 업링크가 먼저 열린다."
+        - "eNodeB가 하향 TEID를 정해 자기 주소와 함께 MME에 알린다."
+        - "MME가 eNodeB 주소와 하향 TEID를 S-GW에 넘긴다."
+        - "S-GW가 하향 TEID를 알게 되어 다운링크가 열린다."
   terms:
     - {term: "EPS 베어러", match: ["EPS 베어러", "EPS bearer"], desc: "단말과 P-GW 사이에서 같은 QoS로 다루는 트래픽 흐름의 단위다. QoS를 다르게 주려면 베어러를 따로 만든다. PDN 연결마다 기본 베어러가 하나 있고, 추가 베어러는 전용(dedicated) 베어러라고 한다.", ref: "TS 23.401 §4.7.2.1"}
     - {term: "EPS Bearer ID", desc: "단말의 EPS 베어러를 구분하는 번호다. DDN과 Control Plane CIoT의 NAS 데이터에 들어간다.", ref: "TS 23.401 §5.3.4.3, §5.3.4B.1"}

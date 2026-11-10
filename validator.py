@@ -400,13 +400,24 @@ def validate_concepts(pages, sets, questions):
         if not isinstance(pg.get("summary"), str) or not pg["summary"].strip():
             errors.append(f"[{loc}] summary가 비어 있음")
         for j, fl in enumerate(pg.get("flows") or []):
-            if not isinstance(fl, dict) or set(fl) != {"id", "title"} or not all(
+            if not isinstance(fl, dict) or set(fl) != {"id", "title", "notes"} or not all(
                     isinstance(fl[k], str) and fl[k].strip() for k in ("id", "title")):
-                errors.append(f"[{loc}] flows[{j}]는 {{id, title}} 문자열 매핑이어야 함")
+                errors.append(f"[{loc}] flows[{j}]는 {{id, title, notes}} 매핑이어야 함")
                 continue
             q = q_by_id.get(fl["id"])
             if not q or q.get("type") not in ("order", "steps"):
                 errors.append(f"[{loc}] flows[{j}] {fl['id']}: 없는 문제이거나 order/steps가 아님")
+                continue
+            # 단계 설명은 그림의 화살표와 1:1이다. steps의 rt 단계는 요청·응답 화살표 2개로 그린다.
+            if q["type"] == "order":
+                n_rows = len(q.get("items") or [])
+            else:
+                n_rows = sum(2 if s.get("rt") else 1 for s in q.get("steps") or [])
+            notes = fl["notes"]
+            if not isinstance(notes, list) or not all(isinstance(x, str) and x.strip() for x in notes):
+                errors.append(f"[{loc}] flows[{j}] notes는 비어 있지 않은 문자열 리스트여야 함")
+            elif len(notes) != n_rows:
+                errors.append(f"[{loc}] flows[{j}] {fl['id']}: notes {len(notes)}개, 화살표 {n_rows}개 — 개수가 같아야 함")
         terms = pg.get("terms")
         if not isinstance(terms, list) or not terms:
             errors.append(f"[{loc}] terms가 비어 있지 않은 리스트여야 함")

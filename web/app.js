@@ -3,6 +3,8 @@
   var DATA = JSON.parse(document.getElementById("quiz-data").textContent);
   // 문제 묶음(sets.yaml). 빌드 때 include를 풀어 [{id, name, ids}]로 넣어 둔다.
   var SETS = JSON.parse(document.getElementById("sets-data").textContent);
+  // 세트별 개념 페이지(concepts.yaml). {세트 id: [{name, summary, flows, terms}, ...]}
+  var CONCEPTS = JSON.parse(document.getElementById("concepts-data").textContent);
   if (!DATA.length) {
     document.getElementById("app").textContent = "문제가 없습니다.";
     return;
@@ -41,6 +43,11 @@
   var elRef = document.getElementById("ref");
   var elNextBtn = document.getElementById("next-btn");
   var elPassBtn = document.getElementById("pass-btn");
+  var elConcept = document.getElementById("concept");
+  var elConceptBtn = document.getElementById("concept-btn");
+  var elConceptBody = document.getElementById("concept-body");
+  var elConceptBack = document.getElementById("concept-back");
+  var elConceptStart = document.getElementById("concept-start");
 
   function shuffle(arr) {
     var a = arr.slice();
@@ -79,8 +86,9 @@
   function showFeedback(isCorrect, explain, ref, diagramNode) {
     answered = true;
     elPassBtn.hidden = true;
-    elVerdict.textContent = isCorrect ? "정답" : "오답";
-    elVerdict.className = "verdict " + (isCorrect ? "correct" : "wrong");
+    // isCorrect가 null이면 PASS로 정답만 확인하는 경우다(채점하지 않음).
+    elVerdict.textContent = isCorrect === null ? "PASS · 채점하지 않음" : (isCorrect ? "정답" : "오답");
+    elVerdict.className = "verdict " + (isCorrect === null ? "pass" : (isCorrect ? "correct" : "wrong"));
     elDiagram.innerHTML = "";
     if (diagramNode) elDiagram.appendChild(diagramNode);
     elExplain.textContent = explain;
@@ -96,6 +104,25 @@
       if (actors.indexOf(it.to) === -1) actors.push(it.to);
     });
     return actors;
+  }
+
+  // steps의 앞 nSteps 단계를 다이어그램 행으로 바꾼다. rt 단계는 요청(from→to)·응답(to→from)
+  // 두 화살표로 펼치고 act를 '/'로 나눠 라벨을 붙인다. stepIdx로 어느 단계의 화살표인지 표시한다.
+  function expandStepRows(steps, nSteps) {
+    var rows = [];
+    for (var i = 0; i < nSteps; i++) {
+      var s = steps[i];
+      if (s.rt) {
+        var parts = s.act.split("/");
+        var reqL = parts[0];
+        var ansL = parts.length > 1 ? parts.slice(1).join("/") : s.act;
+        rows.push({ msg: reqL, from: s.from, to: s.to, stepIdx: i });
+        rows.push({ msg: ansL, from: s.to, to: s.from, stepIdx: i });
+      } else {
+        rows.push({ msg: s.act, from: s.from, to: s.to, stepIdx: i });
+      }
+    }
+    return rows;
   }
 
   // 이 문제의 정답에 실제로 등장하는 (from, to) 조합만. 방향 토글은 이 목록만 순환한다 —
@@ -395,23 +422,8 @@
       return shuffle(others.concat([c]));
     }
 
-    // rt 단계는 요청(from→to)·응답(to→from) 두 화살표로. stepIdx로 방금 확정한 단계를 강조.
-    function expandRows(nSteps) {
-      var rows = [];
-      for (var i = 0; i < nSteps; i++) {
-        var s = steps[i];
-        if (s.rt) {
-          var parts = s.act.split("/");
-          var reqL = parts[0];
-          var ansL = parts.length > 1 ? parts.slice(1).join("/") : s.act;
-          rows.push({ msg: reqL, from: s.from, to: s.to, stepIdx: i });
-          rows.push({ msg: ansL, from: s.to, to: s.from, stepIdx: i });
-        } else {
-          rows.push({ msg: s.act, from: s.from, to: s.to, stepIdx: i });
-        }
-      }
-      return rows;
-    }
+    // rt 단계는 요청·응답 두 화살표로. stepIdx로 방금 확정한 단계를 강조.
+    function expandRows(nSteps) { return expandStepRows(steps, nSteps); }
 
     function gradeLock(row, c, sel) {
       Array.prototype.forEach.call(row.children, function (b) {
@@ -596,7 +608,8 @@
     });
     elBadges.appendChild(el("span", { cls: "badge id", text: q.id }));
     elDeckCount.textContent = "남은 " + deck.length + "문제";
-    elQuestion.textContent = q.question;
+    fillQuestion(q);
+    hideTermPop();
     elQuestion.className = "question" + (looksRaw(q.question) ? " raw" : "");
     elAnswerArea.innerHTML = "";
     elFeedback.hidden = true;
@@ -614,9 +627,31 @@
     render(nextQuestion());
   });
 
+  // PASS: 채점하지 않고 정답과 해설을 보여준다. 몰라서 찍는 대신 정답을 보고 배우게 한다.
+  // 풀던 답안은 지운다(틀린 답안이 화면에 남아 오답으로 기억되지 않게).
+  function answerNode(q) {
+    if (q.type === "mcq") return el("div", { cls: "step-note", text: "정답: " + q.choices[q.answer] });
+    if (q.type === "ox") return el("div", { cls: "step-note", text: "정답: " + (q.answer ? "O" : "X") });
+    if (q.type === "short") return el("div", { cls: "step-note", text: "정답: " + q.answer.join(" / ") });
+    var key = el("div");
+    if (q.type === "order") {
+      key.appendChild(el("div", { cls: "order-label", text: "정답 흐름" }));
+      key.appendChild(buildDiagram(q.items));
+    } else if (q.type === "steps") {
+      key.appendChild(el("div", { cls: "order-label", text: "정답 흐름" }));
+      key.appendChild(renderDiagram(q.actors || collectActors(q.steps), expandStepRows(q.steps, q.steps.length), null));
+    } else if (q.type === "match") {
+      key.className = "step-note";
+      q.pairs.forEach(function (p) { key.appendChild(el("div", { text: p.left + " — " + p.right })); });
+    }
+    return key;
+  }
+
   elPassBtn.addEventListener("click", function () {
     if (answered) return;
-    render(nextQuestion());
+    elAnswerArea.innerHTML = "";
+    hideTermPop();
+    showFeedback(null, current.explain, current.ref, answerNode(current));
   });
 
   // ---- 덱 선택 화면 ----
@@ -668,6 +703,7 @@
     makeRow(elPickMode, "mode", modeVals, function (m) { return MODE_LABEL[m]; });
     var n = matching().length;
     elPickCount.textContent = n + "문제";
+    elConceptBtn.hidden = !(sel.set !== "__all__" && CONCEPTS[sel.set]);
     elStartBtn.disabled = n === 0;
   }
 
@@ -679,7 +715,149 @@
     return parts.join(" · ") + " ▾";
   }
 
+  // ---- 용어 탭 ----
+  // 개념 페이지(concepts.yaml)의 용어가 문제 문장에 나오면 밑줄을 긋고, 탭하면 뜻을 띄운다.
+  // 정답이 드러나지 않게 O/X 문제는 밑줄을 긋지 않고, mcq/short는 정답과 관련된 용어를 뺀다.
+  var GLOSS = [];   // 용어 항목(중복 제거)
+  var TERM_KEYS = []; // [{low, entry}] 긴 문자열부터
+  (function () {
+    var seen = {};
+    Object.keys(CONCEPTS).forEach(function (sid) {
+      CONCEPTS[sid].forEach(function (pg) {
+        pg.terms.forEach(function (t) {
+          if (seen[t.term]) return;
+          seen[t.term] = true;
+          GLOSS.push(t);
+          var keys = t.match || t.term.split(/\s*[\/·]\s*/).concat(t.full ? [t.full] : []);
+          keys.forEach(function (k) {
+            if (k.length >= 2) TERM_KEYS.push({ low: k.toLowerCase(), entry: t });
+          });
+        });
+      });
+    });
+    TERM_KEYS.sort(function (a, b) { return b.low.length - a.low.length; });
+  })();
+
+  var WORD_CH = /[A-Za-z0-9-]/;
+  // text 안의 용어 위치를 앞에서부터 겹치지 않게 찾는다. 영문·숫자·하이픈이 바로 붙어 있으면
+  // 용어가 아니다(예: "TA"는 "TAU" 안에서 찾지 않는다). 대소문자는 무시한다.
+  function findTerms(text) {
+    var low = text.toLowerCase(), out = [], i = 0;
+    while (i < text.length) {
+      var hit = null;
+      if (i === 0 || !WORD_CH.test(text[i - 1])) {
+        for (var k = 0; k < TERM_KEYS.length; k++) {
+          var t = TERM_KEYS[k];
+          var after = text[i + t.low.length];
+          if (low.substr(i, t.low.length) === t.low && (after === undefined || !WORD_CH.test(after))) {
+            hit = t;
+            break;
+          }
+        }
+      }
+      if (hit) {
+        out.push({ start: i, end: i + hit.low.length, entry: hit.entry });
+        i += hit.low.length;
+      } else {
+        i++;
+      }
+    }
+    return out;
+  }
+
+  function normText(s) { return s.toLowerCase().replace(/[\s()·,.\/\-:'"]/g, ""); }
+
+  // 정답이 드러날 수 있는 용어 항목. 정답 문구에 나온 용어, 그 용어를 설명에서 언급하는 용어,
+  // 설명이 정답 문구와 5글자 이상 겹치는 용어를 뺀다.
+  function spoilerEntries(q) {
+    var ans = q.type === "mcq" ? q.choices[q.answer] : (q.type === "short" ? q.answer.join(" ") : null);
+    if (ans === null) return [];
+    var inAns = findTerms(ans).map(function (h) { return h.entry; });
+    var na = normText(ans);
+    return GLOSS.filter(function (e) {
+      if (inAns.indexOf(e) !== -1) return true;
+      if (findTerms(e.desc).some(function (h) { return inAns.indexOf(h.entry) !== -1; })) return true;
+      var nd = normText(e.desc + " " + (e.full || ""));
+      for (var i = 0; i + 5 <= na.length; i++) {
+        if (nd.indexOf(na.substr(i, 5)) !== -1) return true;
+      }
+      return false;
+    });
+  }
+
+  var elTermPop = document.getElementById("term-pop");
+  function hideTermPop() { elTermPop.hidden = true; }
+  function showTermPop(t) {
+    elTermPop.innerHTML = "";
+    var head = el("div", { cls: "term-pop-head", text: t.term });
+    if (t.full) head.appendChild(el("span", { cls: "term-full", text: t.full }));
+    elTermPop.appendChild(head);
+    elTermPop.appendChild(el("div", { text: t.desc }));
+    elTermPop.appendChild(el("div", { cls: "term-ref", text: t.ref + " · 탭하면 닫힘" }));
+    elTermPop.hidden = false;
+  }
+  elTermPop.addEventListener("click", hideTermPop);
+
+  function fillQuestion(q) {
+    elQuestion.textContent = "";
+    var text = q.question;
+    if (q.type === "ox") { elQuestion.textContent = text; return; }
+    var banned = spoilerEntries(q);
+    var pos = 0;
+    findTerms(text).forEach(function (h) {
+      if (banned.indexOf(h.entry) !== -1) return;
+      elQuestion.appendChild(document.createTextNode(text.slice(pos, h.start)));
+      var span = el("span", { cls: "term-link", text: text.slice(h.start, h.end) });
+      span.addEventListener("click", function (ev) { ev.stopPropagation(); showTermPop(h.entry); });
+      elQuestion.appendChild(span);
+      pos = h.end;
+    });
+    elQuestion.appendChild(document.createTextNode(text.slice(pos)));
+  }
+
+  // ---- 개념 페이지 ----
+  // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 절차 요약, 흐름 그림(가리킨 order/steps 문제의 정답 흐름),
+  // 용어 목록 순서로 보여준다. include로 묶은 세트는 묶인 세트들의 페이지를 이어서 보여준다.
+  var qById = {};
+  DATA.forEach(function (q) { qById[q.id] = q; });
+
+  function renderConceptPage(pg) {
+    var sec = el("section", { cls: "concept-page" });
+    sec.appendChild(el("h2", { cls: "concept-title", text: pg.name }));
+    sec.appendChild(el("p", { cls: "concept-summary", text: pg.summary.trim() }));
+    (pg.flows || []).forEach(function (fl) {
+      var q = qById[fl.id];
+      sec.appendChild(el("div", { cls: "order-label", text: "흐름 · " + fl.title }));
+      if (q.type === "steps") {
+        sec.appendChild(renderDiagram(q.actors || collectActors(q.steps), expandStepRows(q.steps, q.steps.length), null));
+      } else {
+        sec.appendChild(renderDiagram(collectActors(q.items), q.items, null));
+      }
+    });
+    sec.appendChild(el("div", { cls: "order-label", text: "용어" }));
+    var list = el("dl", { cls: "concept-terms" });
+    pg.terms.forEach(function (t) {
+      var dt = el("dt", { text: t.term });
+      if (t.full) dt.appendChild(el("span", { cls: "term-full", text: t.full }));
+      list.appendChild(dt);
+      var dd = el("dd", { text: t.desc });
+      dd.appendChild(el("span", { cls: "term-ref", text: t.ref }));
+      list.appendChild(dd);
+    });
+    sec.appendChild(list);
+    return sec;
+  }
+
+  function showConcept() {
+    elConceptBody.innerHTML = "";
+    (CONCEPTS[sel.set] || []).forEach(function (pg) { elConceptBody.appendChild(renderConceptPage(pg)); });
+    elStart.hidden = true;
+    elConcept.hidden = false;
+    window.scrollTo(0, 0);
+  }
+
   function showStart() {
+    elConcept.hidden = true;
     elQuiz.hidden = true;
     elHdr.hidden = true;
     elFeedback.hidden = true;
@@ -692,6 +870,7 @@
     if (!POOL.length) return;
     deck = [];
     elStart.hidden = true;
+    elConcept.hidden = true;
     elQuiz.hidden = false;
     elHdr.hidden = false;
     elDeckChange.textContent = filterLabel();
@@ -699,6 +878,9 @@
   }
 
   elStartBtn.addEventListener("click", startQuiz);
+  elConceptBtn.addEventListener("click", showConcept);
+  elConceptBack.addEventListener("click", showStart);
+  elConceptStart.addEventListener("click", startQuiz);
   elDeckChange.addEventListener("click", showStart);
 
   // 주제가 하나뿐이면 '전체'와 중복이라 주제 선택 줄은 숨긴다.

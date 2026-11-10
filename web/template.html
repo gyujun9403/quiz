@@ -32,7 +32,13 @@ __STYLE__</style>
       <div id="pick-mode" class="picker-row"></div>
     </div>
     <div id="pick-count" class="pick-count"></div>
+    <button id="concept-btn" class="secondary concept-btn" hidden>개념 먼저 보기</button>
     <button id="start-btn" class="primary">시작</button>
+  </div>
+  <div id="concept" class="card" hidden>
+    <button id="concept-back" class="linkbtn">← 덱 선택으로</button>
+    <div id="concept-body"></div>
+    <button id="concept-start" class="primary">이 세트 퀴즈 시작</button>
   </div>
   <div id="quiz" class="card" hidden>
     <div id="badges" class="badges"></div>
@@ -48,10 +54,12 @@ __STYLE__</style>
     </div>
   </div>
   <footer>상태 저장 없음 · 새로고침하면 처음부터</footer>
+  <div id="term-pop" class="term-pop" hidden></div>
 </div>
 
 <script id="quiz-data" type="application/json">__QUIZ_DATA__</script>
 <script id="sets-data" type="application/json">__SETS_DATA__</script>
+<script id="concepts-data" type="application/json">__CONCEPTS_DATA__</script>
 <script>
 __APP__</script>
 </body>

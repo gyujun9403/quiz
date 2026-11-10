@@ -10,8 +10,8 @@ import json
 import os
 import sys
 
-from validator import (lint, load_sets, load_yaml_files, question_files, validate,
-                       validate_sets)
+from validator import (CONCEPTS_FILE, lint, load_sets, load_yaml_files, question_files,
+                       validate, validate_concepts, validate_sets)
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
 
@@ -31,6 +31,8 @@ def build(paths, out_path):
     errors = validate(questions)
     set_errors, sets = validate_sets(load_sets(), {q.get("id") for q in questions})
     errors += set_errors
+    concept_errors, concepts = validate_concepts(load_sets(CONCEPTS_FILE), sets, questions)
+    errors += concept_errors
     if errors:
         print(f"검증 실패: {len(errors)}개 오류 — HTML을 생성하지 않습니다.\n")
         for e in errors:
@@ -47,12 +49,14 @@ def build(paths, out_path):
         return json.dumps(obj, ensure_ascii=False).replace("</", "<\\/")
     html = (load_template()
             .replace("__QUIZ_DATA__", to_json(clean))
-            .replace("__SETS_DATA__", to_json(sets)))
+            .replace("__SETS_DATA__", to_json(sets))
+            .replace("__CONCEPTS_DATA__", to_json(concepts)))
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)
 
-    print(f"생성 완료: {out_path} ({len(clean)}문제, {len(paths)}개 파일, 세트 {len(sets)}개)")
+    n_pages = sum(len(v) for k, v in concepts.items() if not any(s["id"] == k and s["include"] for s in sets))
+    print(f"생성 완료: {out_path} ({len(clean)}문제, {len(paths)}개 파일, 세트 {len(sets)}개, 개념 페이지 {n_pages}개)")
     for w in lint(questions):
         print(" 경고:", w)
 

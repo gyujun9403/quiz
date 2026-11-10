@@ -26,6 +26,8 @@ MATCH_MIN_PAIRS, MATCH_MAX_PAIRS = 2, 6
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
 # 문제 묶음(세트) 정의 파일. 문제 파일이 아니므로 기본 문제 파일 목록(*.yaml)에서 뺀다.
 SETS_FILE = "sets.yaml"
+# 세트별 개념 페이지 정의 파일. 이것도 문제 파일이 아니다.
+CONCEPTS_FILE = "concepts.yaml"
 SET_ID_RE = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*$")
 # 폐기한 문제 ID와 폐기 이유. 폐기 번호 재사용 금지(guide.md ID 규칙)를 검증기가 강제한다.
 RETIRED_IDS = {
@@ -294,12 +296,12 @@ def _check_steps_items(errors, loc, field, items, actors):
 
 
 def question_files():
-    """레포 루트의 문제 파일 목록. 세트 정의 파일은 문제 파일이 아니라서 뺀다."""
-    return [p for p in sorted(glob.glob("*.yaml")) if p != SETS_FILE]
+    """레포 루트의 문제 파일 목록. 세트·개념 정의 파일은 문제 파일이 아니라서 뺀다."""
+    return [p for p in sorted(glob.glob("*.yaml")) if p not in (SETS_FILE, CONCEPTS_FILE)]
 
 
 def load_sets(path=SETS_FILE):
-    """세트 정의를 읽는다. 파일이 없으면 세트 없음(빈 리스트)."""
+    """세트(또는 개념 페이지) 정의 리스트를 읽는다. 파일이 없으면 빈 리스트."""
     try:
         with open(path, encoding="utf-8") as f:
             data = yaml.safe_load(f)
@@ -364,7 +366,79 @@ def validate_sets(sets, question_ids):
                 errors.append(f"[세트 {sid}] include는 한 단계만 허용 ({inc}는 자기 자신이거나 include를 가짐)")
             else:
                 ids.extend(x for x in by_id[inc].get("ids") or [] if x not in ids)
-        resolved.append({"id": sid, "name": st.get("name"), "ids": ids})
+        resolved.append({"id": sid, "name": st.get("name"), "ids": ids,
+                         "include": list(st.get("include") or [])})
+    return errors, resolved
+
+
+def validate_concepts(pages, sets, questions):
+    """개념 페이지 정의를 검사하고 {세트 id: [페이지, ...]}를 돌려준다.
+
+    페이지는 세트 하나에 붙는다. include로 묶은 세트는 묶인 세트들의 페이지를 순서대로 보여준다.
+    flows는 order/steps 문제 ID를 가리켜 그 정답 흐름을 그림으로 보여준다.
+    """
+    errors = []
+    set_by_id = {st["id"]: st for st in sets}
+    q_by_id = {q.get("id"): q for q in questions}
+    by_set = {}
+    for i, pg in enumerate(pages):
+        if not isinstance(pg, dict):
+            errors.append(f"[개념 #{i + 1}] 매핑(dict)이 아님: {pg!r}")
+            continue
+        sid = pg.get("set")
+        loc = f"개념 {sid or '#' + str(i + 1)}"
+        unknown = set(pg) - {"set", "summary", "flows", "terms"}
+        if unknown:
+            errors.append(f"[{loc}] 알 수 없는 필드: {sorted(unknown)}")
+        if sid not in set_by_id:
+            errors.append(f"[{loc}] sets.yaml에 없는 세트")
+            continue
+        if set_by_id[sid]["include"]:
+            errors.append(f"[{loc}] include로 묶은 세트에는 직접 페이지를 달 수 없음(묶인 세트의 페이지를 보여줌)")
+        if sid in by_set:
+            errors.append(f"[{loc}] 같은 세트의 개념 페이지가 두 개")
+        if not isinstance(pg.get("summary"), str) or not pg["summary"].strip():
+            errors.append(f"[{loc}] summary가 비어 있음")
+        for j, fl in enumerate(pg.get("flows") or []):
+            if not isinstance(fl, dict) or set(fl) != {"id", "title"} or not all(
+                    isinstance(fl[k], str) and fl[k].strip() for k in ("id", "title")):
+                errors.append(f"[{loc}] flows[{j}]는 {{id, title}} 문자열 매핑이어야 함")
+                continue
+            q = q_by_id.get(fl["id"])
+            if not q or q.get("type") not in ("order", "steps"):
+                errors.append(f"[{loc}] flows[{j}] {fl['id']}: 없는 문제이거나 order/steps가 아님")
+        terms = pg.get("terms")
+        if not isinstance(terms, list) or not terms:
+            errors.append(f"[{loc}] terms가 비어 있지 않은 리스트여야 함")
+            terms = []
+        seen = set()
+        for j, t in enumerate(terms):
+            tl = f"{loc} terms[{j}]"
+            if not isinstance(t, dict):
+                errors.append(f"[{tl}] 매핑(dict)이 아님")
+                continue
+            known = {"term", "full", "desc", "ref", "match"}
+            if set(t) - known:
+                errors.append(f"[{tl}] 알 수 없는 필드: {sorted(set(t) - known)}")
+            if "match" in t and (not isinstance(t["match"], list) or not t["match"] or not all(
+                    isinstance(m, str) and len(m.strip()) >= 2 for m in t["match"])):
+                errors.append(f"[{tl}] match는 2글자 이상 문자열의 리스트여야 함")
+            for k in ("term", "desc", "ref"):
+                if not isinstance(t.get(k), str) or not t[k].strip():
+                    errors.append(f"[{tl}] {k}가 비어 있음 (ref는 근거 조항, 필수)")
+            if "full" in t and (not isinstance(t["full"], str) or not t["full"].strip()):
+                errors.append(f"[{tl}] full이 비어 있음")
+            if t.get("term") in seen:
+                errors.append(f"[{tl}] 같은 페이지에 용어 중복: {t.get('term')}")
+            seen.add(t.get("term"))
+        by_set[sid] = pg
+
+    resolved = {}
+    for st in sets:
+        members = st["include"] or [st["id"]]
+        pgs = [dict(by_set[m], name=set_by_id[m]["name"]) for m in members if m in by_set]
+        if pgs:
+            resolved[st["id"]] = pgs
     return errors, resolved
 
 
@@ -378,6 +452,8 @@ def main():
     errors = validate(questions)
     set_errors, sets = validate_sets(load_sets(), {q.get("id") for q in questions})
     errors += set_errors
+    concept_errors, concepts = validate_concepts(load_sets(CONCEPTS_FILE), sets, questions)
+    errors += concept_errors
 
     if errors:
         print(f"검증 실패: {len(errors)}개 오류\n")
@@ -385,7 +461,8 @@ def main():
             print(" -", e)
         sys.exit(1)
 
-    print(f"검증 통과: {len(questions)}개 문제, {len(paths)}개 파일, 세트 {len(sets)}개")
+    n_pages = len(load_sets(CONCEPTS_FILE))
+    print(f"검증 통과: {len(questions)}개 문제, {len(paths)}개 파일, 세트 {len(sets)}개, 개념 페이지 {n_pages}개")
     warnings = lint(questions)
     if warnings:
         print(f"\n경고 {len(warnings)}개 (빌드는 막지 않음)")

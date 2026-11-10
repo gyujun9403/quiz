@@ -817,9 +817,10 @@
 
   // ---- 개념 페이지 ----
   // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 카드는 절차 요약 1장과 흐름 그림 1장씩이다.
-  // 단계 설명과 용어집은 오른쪽에서 나오는 옆 패널로 연다. 여는 탭은 화면 오른쪽 가장자리에 고정해
-  // 스크롤 위치와 상관없이 바로 열 수 있다. 패널이 그림을 가리므로 화살표를 탭하면 패널이 열리며
-  // 그 단계 설명이 강조되고, 설명을 탭하면 패널이 닫히며 그 화살표가 강조된 곳으로 스크롤한다.
+  // 단계 설명과 용어집은 화면 아래 1/3 패널로 연다. 여는 탭은 화면 오른쪽 가장자리에 고정해
+  // 스크롤 위치와 상관없이 바로 열 수 있다. 위쪽 2/3에는 그림이 그대로 보인다.
+  // 단계 설명은 한 단계씩 [이전 단계]·[다음 단계]로 넘기며, 넘길 때마다 그림의 그 화살표를 강조하고
+  // 패널에 가려지면 스크롤한다. 화살표를 탭하면 그 단계로 바로 간다. 용어집은 패널 안에서 스크롤한다.
   // include로 묶은 세트는 위쪽 탭으로 묶인 세트를 고르고, 마지막 카드에서 다음 세트로 넘어간다.
   var qById = {};
   DATA.forEach(function (q) { qById[q.id] = q; });
@@ -828,8 +829,6 @@
   var elSheetTabs = document.getElementById("sheet-tabs");
   var elSheetBody = document.getElementById("sheet-body");
   var elEdgeTabs = document.getElementById("edge-tabs");
-  var elBackdrop = document.getElementById("sheet-backdrop");
-  elBackdrop.addEventListener("click", function () { cState.sheet = null; drawConcept(false); });
 
   function cardsOf(pg) {
     var cards = [{ kind: "summary" }];
@@ -872,7 +871,7 @@
       cState.sheet = "notes";
       drawConcept(false);
     }, cState.hl));
-    box.appendChild(el("div", { cls: "concept-hint", text: "화살표를 탭하면 그 단계 설명이 열린다 · 오른쪽 탭으로 설명·용어집" }));
+    box.appendChild(el("div", { cls: "concept-hint", text: "화살표를 탭하면 그 단계 설명이 열린다" }));
     return box;
   }
 
@@ -886,7 +885,11 @@
       else if (cState.p > 0) { cState.p--; cState.c = cardsOf(cState.pages[cState.p]).length - 1; }
     }
     cState.hl = -1;
-    if (cState.sheet === "notes" && curCard().card.kind !== "flow") cState.sheet = null;
+    if (cState.sheet === "notes") {
+      // 단계 설명을 연 채로 넘기면 새 흐름은 1단계부터, 흐름이 아닌 카드면 패널을 닫는다.
+      if (curCard().card.kind === "flow") cState.hl = 0;
+      else cState.sheet = null;
+    }
     drawConcept(true);
   }
 
@@ -940,6 +943,7 @@
     var b = el("button", { cls: "edge-tab", text: label });
     b.addEventListener("click", function () {
       cState.sheet = cState.sheet === kind ? null : kind;
+      if (cState.sheet === "notes" && cState.hl < 0) cState.hl = 0;
       drawConcept(false);
     });
     return b;
@@ -949,16 +953,19 @@
     var cur = curCard();
     var open = !!cState.sheet && !elConcept.hidden;
     elSheet.hidden = !open;
-    elBackdrop.hidden = !open;
     elEdgeTabs.hidden = open || elConcept.hidden;
-    document.body.classList.toggle("drawer-open", open);
+    document.body.classList.toggle("panel-open", open);
     if (!open) return;
 
     elSheetTabs.innerHTML = "";
     var kinds = cur.card.kind === "flow" ? [["notes", "단계 설명"], ["terms", "용어집"]] : [["terms", "용어집"]];
     kinds.forEach(function (k) {
       var b = el("button", { cls: "sheet-tab" + (cState.sheet === k[0] ? " on" : ""), text: k[1] });
-      b.addEventListener("click", function () { cState.sheet = k[0]; drawConcept(false); });
+      b.addEventListener("click", function () {
+        cState.sheet = k[0];
+        if (cState.sheet === "notes" && cState.hl < 0) cState.hl = 0;
+        drawConcept(false);
+      });
       elSheetTabs.appendChild(b);
     });
 
@@ -970,20 +977,22 @@
       elSheetBody.setAttribute("data-where", where);
     }
     if (cState.sheet === "notes") {
+      // 한 단계씩: 지금 단계 설명 하나와 이전·다음 단계 버튼.
       var fr = flowActorsRows(qById[cur.card.fl.id]);
-      var list = el("ol", { cls: "sheet-notes" });
-      cur.card.fl.notes.forEach(function (note, i) {
-        var li = el("li", { cls: i === cState.hl ? "on" : "" });
-        li.appendChild(el("div", { cls: "note-msg", text: (i + 1) + ". " + fr.rows[i].msg }));
-        li.appendChild(el("div", { text: note }));
-        // 설명을 탭하면 패널을 닫고 그림에서 그 화살표를 보여준다.
-        li.addEventListener("click", function () { cState.hl = i; cState.sheet = null; drawConcept(false); });
-        list.appendChild(li);
-      });
-      elSheetBody.appendChild(list);
-      elSheetBody.appendChild(el("div", { cls: "concept-hint", text: "설명을 탭하면 그림에서 그 화살표를 보여준다" }));
-      var on = list.querySelector("li.on");
-      if (on) on.scrollIntoView({ block: "center" });
+      var notes = cur.card.fl.notes;
+      var i = cState.hl;
+      elSheetBody.appendChild(el("div", { cls: "step-head", text: (i + 1) + " / " + notes.length + " · " + fr.rows[i].msg }));
+      elSheetBody.appendChild(el("p", { cls: "step-text", text: notes[i] }));
+      var stepNav = el("div", { cls: "step-nav" });
+      var sp = el("button", { cls: "secondary", text: "◀ 이전 단계" });
+      sp.disabled = i === 0;
+      sp.addEventListener("click", function () { cState.hl = i - 1; drawConcept(false); });
+      var sn = el("button", { cls: "secondary", text: "다음 단계 ▶" });
+      sn.disabled = i === notes.length - 1;
+      sn.addEventListener("click", function () { cState.hl = i + 1; drawConcept(false); });
+      stepNav.appendChild(sp);
+      stepNav.appendChild(sn);
+      elSheetBody.appendChild(stepNav);
     } else {
       var terms = el("div", { cls: "sheet-terms" });
       cur.pg.terms.forEach(function (t, i) {
@@ -1008,13 +1017,13 @@
     }
   }
 
-  // 강조한 화살표가 화면 밖에 있으면 화면 위쪽 1/3쯤으로 스크롤한다.
+  // 강조한 화살표가 화면 밖이거나 아래 패널에 가려지면, 패널 위 영역의 위쪽 1/4쯤으로 스크롤한다.
   function revealHighlightedRow() {
-    if (cState.sheet) return;
     var row = elConceptBody.querySelector(".diagram-row.hl");
     if (!row) return;
     var r = row.getBoundingClientRect();
-    if (r.top < 0 || r.bottom > window.innerHeight) window.scrollBy(0, r.top - window.innerHeight * 0.3);
+    var visibleBottom = cState.sheet ? window.innerHeight - elSheet.offsetHeight : window.innerHeight;
+    if (r.top < 0 || r.bottom > visibleBottom) window.scrollBy(0, r.top - visibleBottom * 0.25);
   }
 
   function showConcept() {
@@ -1028,9 +1037,8 @@
   function closeSheet() {
     cState.sheet = null;
     elSheet.hidden = true;
-    elBackdrop.hidden = true;
     elEdgeTabs.hidden = true;
-    document.body.classList.remove("drawer-open");
+    document.body.classList.remove("panel-open");
   }
   document.getElementById("sheet-close").addEventListener("click", function () {
     cState.sheet = null;

@@ -342,36 +342,37 @@
     box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
     cursor: pointer;
   }
-  body.drawer-open { overflow: hidden; }
-  .drawer-backdrop { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.35); z-index: 9; }
-  .drawer-backdrop[hidden] { display: none; }
-  .drawer {
+  /* 패널이 열리면 본문 아래에 패널 높이만큼 여백을 줘서 그림 끝까지 패널 위로 올려 볼 수 있게 한다 */
+  body.panel-open { padding-bottom: 36vh; }
+  .panel {
     position: fixed;
-    top: 0;
+    left: 0;
     right: 0;
     bottom: 0;
-    width: min(86vw, 400px);
+    height: 34vh;
+    min-height: 210px;
+    max-width: 600px;
+    margin: 0 auto;
     display: flex;
     flex-direction: column;
     background: var(--card);
     color: var(--fg);
-    border-left: 1px solid var(--accent);
-    box-shadow: -4px 0 18px rgba(0, 0, 0, 0.25);
+    border-top: 2px solid var(--accent);
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -4px 18px rgba(0, 0, 0, 0.2);
     z-index: 10;
-    animation: drawer-in 0.18s ease-out;
   }
-  .drawer[hidden] { display: none; }
-  @keyframes drawer-in { from { transform: translateX(100%); } to { transform: none; } }
+  .panel[hidden] { display: none; }
+  .step-head { font-weight: 700; color: var(--good-fg); margin: 4px 0 6px; }
+  .step-text { font-size: 15px; line-height: 1.6; margin: 0 0 12px; }
+  .step-nav { display: flex; gap: 8px; }
+  .step-nav .secondary { flex: 1; color: var(--accent); border-color: var(--accent); }
+  .step-nav .secondary:disabled { opacity: 0.35; }
   .sheet-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; border-bottom: 1px solid var(--border); }
   .sheet-tabs { flex: 1; display: flex; gap: 6px; }
   .sheet-tab { font-size: 14px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--border); background: none; color: var(--muted); }
   .sheet-tab.on { color: var(--accent); border-color: var(--accent); font-weight: 600; }
   .sheet-body { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 12px 16px; }
-  .sheet-notes { list-style: none; margin: 0; padding: 0; }
-  .sheet-notes li { padding: 8px 10px; border-radius: 8px; font-size: 14px; line-height: 1.55; cursor: pointer; }
-  .sheet-notes li.on { background: var(--bg); outline: 1px solid var(--good-fg); }
-  .sheet-notes .note-msg { font-weight: 700; margin-bottom: 2px; }
-  .sheet-notes li.on .note-msg { color: var(--good-fg); }
   .sheet-term { border-bottom: 1px solid var(--border); padding: 4px 0 8px; }
   .sheet-term-head { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--fg); font-size: 15px; font-weight: 700; padding: 6px 0; cursor: pointer; }
   .sheet-term-head .term-full { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }

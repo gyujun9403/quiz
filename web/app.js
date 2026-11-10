@@ -815,10 +815,46 @@
     elQuestion.appendChild(document.createTextNode(text.slice(pos)));
   }
 
+  // ---- 개념 페이지 글 가독성 ----
+  // 문장 단위로 끊는다. summary는 한 줄에 한 문장이고, 단계 설명·용어 뜻은 "~다." 뒤에서 끊는다.
+  function sentences(text) {
+    return text.trim().replace(/다\.\s+/g, "다.\n").split("\n").filter(function (x) { return x.trim(); });
+  }
+
+  // 용어집에 있는 용어를 굵게 표시하고, 탭하면 뜻 팝업을 띄운다(개념 페이지는 정답 노출 걱정이 없다).
+  function richNode(tag, cls, text) {
+    var node = el(tag, { cls: cls });
+    var pos = 0;
+    findTerms(text).forEach(function (h) {
+      node.appendChild(document.createTextNode(text.slice(pos, h.start)));
+      var kw = el("b", { cls: "kw", text: text.slice(h.start, h.end) });
+      kw.addEventListener("click", function (ev) { ev.stopPropagation(); showTermPop(h.entry); });
+      node.appendChild(kw);
+      pos = h.end;
+    });
+    node.appendChild(document.createTextNode(text.slice(pos)));
+    return node;
+  }
+
+  // 문장마다 한 문단. 첫 문장을 리드로 강조하고 나머지는 목록으로 보여주는 형태(lead)도 지원한다.
+  function proseNode(text, cls, lead) {
+    var box = el("div", { cls: "prose " + cls });
+    var ss = sentences(text);
+    if (lead && ss.length > 1) {
+      box.appendChild(richNode("p", "prose-lead", ss[0]));
+      var ul = el("ul", { cls: "prose-list" });
+      ss.slice(1).forEach(function (x) { ul.appendChild(richNode("li", "", x)); });
+      box.appendChild(ul);
+    } else {
+      ss.forEach(function (x) { box.appendChild(richNode("p", "", x)); });
+    }
+    return box;
+  }
+
   // ---- 개념 페이지 ----
   // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 카드는 절차 요약 1장과 흐름 그림 1장씩이다.
-  // 단계 설명과 용어집은 화면 아래 1/3 패널로 연다. 여는 탭은 화면 오른쪽 가장자리에 고정해
-  // 스크롤 위치와 상관없이 바로 열 수 있다. 위쪽 2/3에는 그림이 그대로 보인다.
+  // 단계 설명과 용어집은 화면 아래 1/3 패널로 연다. 여는 버튼은 화면 맨 아래 얇은 바(dock)에 고정해
+  // 스크롤 위치와 상관없이 바로 열 수 있고 본문을 가리지 않는다. 위쪽 2/3에는 그림이 그대로 보인다.
   // 단계 설명은 한 단계씩 [이전 단계]·[다음 단계]로 넘기며, 넘길 때마다 그림의 그 화살표를 강조하고
   // 패널에 가려지면 스크롤한다. 화살표를 탭하면 그 단계로 바로 간다. 용어집은 패널 안에서 스크롤한다.
   // include로 묶은 세트는 위쪽 탭으로 묶인 세트를 고르고, 마지막 카드에서 다음 세트로 넘어간다.
@@ -829,6 +865,7 @@
   var elSheetTabs = document.getElementById("sheet-tabs");
   var elSheetBody = document.getElementById("sheet-body");
   var elEdgeTabs = document.getElementById("edge-tabs");
+  var elSheetFoot = document.getElementById("sheet-foot");
 
   function cardsOf(pg) {
     var cards = [{ kind: "summary" }];
@@ -861,7 +898,7 @@
     var box = el("div", { cls: "concept-card" });
     if (card.kind === "summary") {
       box.appendChild(el("div", { cls: "order-label", text: "절차 요약" }));
-      box.appendChild(el("p", { cls: "concept-summary", text: pg.summary.trim() }));
+      box.appendChild(proseNode(pg.summary, "concept-summary", true));
       return box;
     }
     box.appendChild(el("div", { cls: "order-label", text: "흐름 " + card.n + "/" + card.of + " · " + card.fl.title }));
@@ -929,10 +966,10 @@
     nav.appendChild(next);
     elConceptBody.appendChild(nav);
 
-    // 오른쪽 가장자리 고정 탭. 단계 설명은 흐름 카드에서만 연다.
+    // 화면 맨 아래 고정 바. 단계 설명은 흐름 카드에서만 연다.
     elEdgeTabs.innerHTML = "";
-    if (cur.card.kind === "flow") elEdgeTabs.appendChild(sheetButton("notes", "설명"));
-    elEdgeTabs.appendChild(sheetButton("terms", "용어"));
+    if (cur.card.kind === "flow") elEdgeTabs.appendChild(sheetButton("notes", "단계 설명 ▲"));
+    elEdgeTabs.appendChild(sheetButton("terms", "용어집 ▲"));
 
     drawSheet();
     if (toTop) window.scrollTo(0, 0);
@@ -940,7 +977,7 @@
   }
 
   function sheetButton(kind, label) {
-    var b = el("button", { cls: "edge-tab", text: label });
+    var b = el("button", { cls: "dock-btn", text: label });
     b.addEventListener("click", function () {
       cState.sheet = cState.sheet === kind ? null : kind;
       if (cState.sheet === "notes" && cState.hl < 0) cState.hl = 0;
@@ -955,6 +992,8 @@
     elSheet.hidden = !open;
     elEdgeTabs.hidden = open || elConcept.hidden;
     document.body.classList.toggle("panel-open", open);
+    document.body.classList.toggle("dock-open", !open && !elConcept.hidden);
+    elSheetFoot.innerHTML = "";
     if (!open) return;
 
     elSheetTabs.innerHTML = "";
@@ -982,7 +1021,7 @@
       var notes = cur.card.fl.notes;
       var i = cState.hl;
       elSheetBody.appendChild(el("div", { cls: "step-head", text: (i + 1) + " / " + notes.length + " · " + fr.rows[i].msg }));
-      elSheetBody.appendChild(el("p", { cls: "step-text", text: notes[i] }));
+      elSheetBody.appendChild(proseNode(notes[i], "step-text", false));
       var stepNav = el("div", { cls: "step-nav" });
       var sp = el("button", { cls: "secondary", text: "◀ 이전 단계" });
       sp.disabled = i === 0;
@@ -992,7 +1031,8 @@
       sn.addEventListener("click", function () { cState.hl = i + 1; drawConcept(false); });
       stepNav.appendChild(sp);
       stepNav.appendChild(sn);
-      elSheetBody.appendChild(stepNav);
+      // 이전·다음 버튼은 패널 맨 아래에 고정한다(설명 길이와 상관없이 같은 자리를 연달아 탭할 수 있게).
+      elSheetFoot.appendChild(stepNav);
     } else {
       var terms = el("div", { cls: "sheet-terms" });
       cur.pg.terms.forEach(function (t, i) {
@@ -1008,7 +1048,7 @@
         });
         item.appendChild(head);
         if (cState.open[key]) {
-          item.appendChild(el("div", { cls: "sheet-term-desc", text: t.desc }));
+          item.appendChild(proseNode(t.desc, "sheet-term-desc", false));
           item.appendChild(el("div", { cls: "term-ref", text: t.ref }));
         }
         terms.appendChild(item);
@@ -1039,6 +1079,7 @@
     elSheet.hidden = true;
     elEdgeTabs.hidden = true;
     document.body.classList.remove("panel-open");
+    document.body.classList.remove("dock-open");
   }
   document.getElementById("sheet-close").addEventListener("click", function () {
     cState.sheet = null;

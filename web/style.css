@@ -219,7 +219,7 @@
     font-size: 14px;
     line-height: 1.55;
     box-shadow: 0 4px 18px rgba(0, 0, 0, 0.25);
-    z-index: 10;
+    z-index: 12;
   }
   .term-pop-head { font-weight: 700; margin-bottom: 4px; }
   .term-pop .term-full { font-weight: 400; color: var(--muted); font-size: 13px; margin-left: 6px; }
@@ -320,26 +320,32 @@
   .concept-nav .secondary { flex: 1; color: var(--accent); border-color: var(--accent); }
   .concept-nav .secondary:disabled { opacity: 0.35; }
   .concept-pos { font-size: 13px; color: var(--muted); min-width: 52px; text-align: center; }
-  /* 단계 설명·용어집 옆 패널과, 여는 탭(화면 오른쪽 가장자리 고정) */
-  .edge-tabs {
+  /* 단계 설명·용어집을 여는 바: 화면 맨 아래 고정, 본문을 가리지 않게 본문 아래에 바 높이만큼 여백 */
+  body.dock-open { padding-bottom: 64px; }
+  .dock {
     position: fixed;
+    left: 0;
     right: 0;
-    top: 38%;
+    bottom: 0;
+    max-width: 600px;
+    margin: 0 auto;
     display: flex;
-    flex-direction: column;
     gap: 8px;
+    padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+    background: var(--card);
+    border-top: 1px solid var(--border);
     z-index: 8;
   }
-  .edge-tabs[hidden] { display: none; }
-  .edge-tab {
-    padding: 12px 8px;
-    font-size: 13px;
+  .dock[hidden] { display: none; }
+  .dock-btn {
+    flex: 1;
+    padding: 10px;
+    font-size: 14px;
     font-weight: 600;
-    color: #fff;
-    background: var(--accent);
-    border: none;
-    border-radius: 10px 0 0 10px;
-    box-shadow: -2px 2px 8px rgba(0, 0, 0, 0.2);
+    color: var(--accent);
+    background: none;
+    border: 1px solid var(--accent);
+    border-radius: 10px;
     cursor: pointer;
   }
   /* 패널이 열리면 본문 아래에 패널 높이만큼 여백을 줘서 그림 끝까지 패널 위로 올려 볼 수 있게 한다 */
@@ -364,8 +370,11 @@
   }
   .panel[hidden] { display: none; }
   .step-head { font-weight: 700; color: var(--good-fg); margin: 4px 0 6px; }
-  .step-text { font-size: 15px; line-height: 1.6; margin: 0 0 12px; }
+  .step-text { font-size: 16px; line-height: 1.7; margin: 0 0 12px; }
+  .step-text p { margin: 0 0 6px; }
   .step-nav { display: flex; gap: 8px; }
+  .sheet-foot { padding: 0 12px calc(10px + env(safe-area-inset-bottom)); }
+  .sheet-foot:empty { display: none; }
   .step-nav .secondary { flex: 1; color: var(--accent); border-color: var(--accent); }
   .step-nav .secondary:disabled { opacity: 0.35; }
   .sheet-head { display: flex; align-items: center; gap: 8px; padding: 10px 12px 6px; border-bottom: 1px solid var(--border); }
@@ -376,9 +385,24 @@
   .sheet-term { border-bottom: 1px solid var(--border); padding: 4px 0 8px; }
   .sheet-term-head { display: block; width: 100%; text-align: left; background: none; border: none; color: var(--fg); font-size: 15px; font-weight: 700; padding: 6px 0; cursor: pointer; }
   .sheet-term-head .term-full { font-weight: 400; color: var(--muted); font-size: 12px; margin-left: 6px; }
-  .sheet-term-desc { font-size: 14px; line-height: 1.55; }
+  .sheet-term-desc { font-size: 14px; line-height: 1.65; }
+  .sheet-term-desc p { margin: 0 0 4px; }
   .sheet-term .term-ref { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .concept-summary { white-space: pre-line; line-height: 1.65; font-size: 15px; margin: 0 0 14px; }
+  /* 개념 페이지 글: 문장마다 문단, 용어는 굵게(탭하면 뜻) */
+  .concept-summary { font-size: 16px; line-height: 1.75; margin: 0 0 14px; }
+  .prose-lead {
+    font-size: 17px;
+    font-weight: 600;
+    margin: 0 0 12px;
+    padding: 10px 12px;
+    background: var(--bg);
+    border-left: 3px solid var(--accent);
+    border-radius: 6px;
+  }
+  .prose-list { margin: 0; padding-left: 20px; }
+  .prose-list li { margin: 0 0 10px; }
+  .prose-list li::marker { color: var(--accent); }
+  .kw { font-weight: 700; border-bottom: 1px dotted var(--accent); cursor: pointer; }
   .linkbtn {
     background: none;
     border: none;

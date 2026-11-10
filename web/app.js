@@ -816,44 +816,122 @@
   }
 
   // ---- 개념 페이지 ----
-  // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 절차 요약, 흐름 그림(가리킨 order/steps 문제의 정답 흐름),
-  // 용어 목록 순서로 보여준다. include로 묶은 세트는 묶인 세트들의 페이지를 이어서 보여준다.
+  // 세트를 고른 뒤 퀴즈 전에 읽는 화면. 스크롤 대신 카드 넘기기로 본다.
+  // 카드 순서: 절차 요약 → 흐름 그림(가리킨 order/steps 문제의 정답 흐름) → 용어 하나씩.
+  // include로 묶은 세트는 위쪽 탭으로 묶인 세트를 고르고, 마지막 카드에서 다음 세트로 넘어간다.
   var qById = {};
   DATA.forEach(function (q) { qById[q.id] = q; });
+  var cState = { pages: [], p: 0, c: 0, list: false };
 
-  function renderConceptPage(pg) {
-    var sec = el("section", { cls: "concept-page" });
-    sec.appendChild(el("h2", { cls: "concept-title", text: pg.name }));
-    sec.appendChild(el("p", { cls: "concept-summary", text: pg.summary.trim() }));
-    (pg.flows || []).forEach(function (fl) {
-      var q = qById[fl.id];
-      sec.appendChild(el("div", { cls: "order-label", text: "흐름 · " + fl.title }));
-      if (q.type === "steps") {
-        sec.appendChild(renderDiagram(q.actors || collectActors(q.steps), expandStepRows(q.steps, q.steps.length), null));
-      } else {
-        sec.appendChild(renderDiagram(collectActors(q.items), q.items, null));
-      }
+  function cardsOf(pg) {
+    var cards = [{ kind: "summary" }];
+    (pg.flows || []).forEach(function (fl, i) {
+      cards.push({ kind: "flow", fl: fl, n: i + 1, of: pg.flows.length });
     });
-    sec.appendChild(el("div", { cls: "order-label", text: "용어" }));
-    var list = el("dl", { cls: "concept-terms" });
-    pg.terms.forEach(function (t) {
-      var dt = el("dt", { text: t.term });
-      if (t.full) dt.appendChild(el("span", { cls: "term-full", text: t.full }));
-      list.appendChild(dt);
-      var dd = el("dd", { text: t.desc });
-      dd.appendChild(el("span", { cls: "term-ref", text: t.ref }));
-      list.appendChild(dd);
-    });
-    sec.appendChild(list);
-    return sec;
+    pg.terms.forEach(function (t, i) { cards.push({ kind: "term", t: t, n: i + 1, of: pg.terms.length }); });
+    return cards;
+  }
+
+  function flowDiagram(q) {
+    if (q.type === "steps") {
+      return renderDiagram(q.actors || collectActors(q.steps), expandStepRows(q.steps, q.steps.length), null);
+    }
+    return renderDiagram(collectActors(q.items), q.items, null);
+  }
+
+  function cardNode(pg, card) {
+    var box = el("div", { cls: "concept-card" });
+    if (card.kind === "summary") {
+      box.appendChild(el("div", { cls: "order-label", text: "절차 요약" }));
+      box.appendChild(el("p", { cls: "concept-summary", text: pg.summary.trim() }));
+    } else if (card.kind === "flow") {
+      box.appendChild(el("div", { cls: "order-label", text: "흐름 " + card.n + "/" + card.of + " · " + card.fl.title }));
+      box.appendChild(flowDiagram(qById[card.fl.id]));
+    } else {
+      box.appendChild(el("div", { cls: "order-label", text: "용어 " + card.n + "/" + card.of }));
+      box.appendChild(el("div", { cls: "card-term", text: card.t.term }));
+      if (card.t.full) box.appendChild(el("div", { cls: "card-full", text: card.t.full }));
+      box.appendChild(el("p", { cls: "card-desc", text: card.t.desc }));
+      box.appendChild(el("div", { cls: "term-ref", text: card.t.ref }));
+    }
+    return box;
+  }
+
+  function moveCard(step) {
+    var len = cardsOf(cState.pages[cState.p]).length;
+    if (step > 0) {
+      if (cState.c < len - 1) cState.c++;
+      else if (cState.p < cState.pages.length - 1) { cState.p++; cState.c = 0; }
+    } else {
+      if (cState.c > 0) cState.c--;
+      else if (cState.p > 0) { cState.p--; cState.c = cardsOf(cState.pages[cState.p]).length - 1; }
+    }
+    drawConcept();
+  }
+
+  function drawConcept() {
+    var pages = cState.pages;
+    var pg = pages[cState.p];
+    var cards = cardsOf(pg);
+    elConceptBody.innerHTML = "";
+
+    if (pages.length > 1) {
+      var tabs = el("div", { cls: "picker-row concept-tabs" });
+      pages.forEach(function (p, i) {
+        var b = el("button", { cls: "pick-btn" + (i === cState.p ? " sel" : ""), text: p.name });
+        b.addEventListener("click", function () { cState.p = i; cState.c = 0; cState.list = false; drawConcept(); });
+        tabs.appendChild(b);
+      });
+      elConceptBody.appendChild(tabs);
+    }
+    elConceptBody.appendChild(el("h2", { cls: "concept-title", text: pg.name }));
+
+    var toggle = el("button", { cls: "secondary concept-toggle", text: cState.list ? "카드로 보기" : "용어 목록" });
+    toggle.addEventListener("click", function () { cState.list = !cState.list; drawConcept(); });
+
+    if (cState.list) {
+      // 용어 목록: 탭하면 그 용어 카드로 이동한다.
+      var list = el("dl", { cls: "concept-terms" });
+      pg.terms.forEach(function (t, i) {
+        var dt = el("dt", { cls: "tappable-term", text: t.term });
+        if (t.full) dt.appendChild(el("span", { cls: "term-full", text: t.full }));
+        dt.addEventListener("click", function () {
+          cState.c = 1 + (pg.flows || []).length + i;
+          cState.list = false;
+          drawConcept();
+        });
+        list.appendChild(dt);
+        list.appendChild(el("dd", { text: t.desc }));
+      });
+      elConceptBody.appendChild(toggle);
+      elConceptBody.appendChild(list);
+    } else {
+      elConceptBody.appendChild(cardNode(pg, cards[cState.c]));
+      var first = cState.p === 0 && cState.c === 0;
+      var last = cState.p === pages.length - 1 && cState.c === cards.length - 1;
+      var nav = el("div", { cls: "concept-nav" });
+      var prev = el("button", { cls: "secondary", text: "◀ 이전" });
+      prev.disabled = first;
+      prev.addEventListener("click", function () { moveCard(-1); });
+      var pos = el("span", { cls: "concept-pos", text: (cState.c + 1) + " / " + cards.length });
+      var next = el("button", { cls: "secondary", text: cState.c === cards.length - 1 && !last ? "다음 세트 ▶" : "다음 ▶" });
+      next.disabled = last;
+      next.addEventListener("click", function () { moveCard(1); });
+      nav.appendChild(prev);
+      nav.appendChild(pos);
+      nav.appendChild(next);
+      elConceptBody.appendChild(nav);
+      elConceptBody.appendChild(toggle);
+    }
+    window.scrollTo(0, 0);
   }
 
   function showConcept() {
-    elConceptBody.innerHTML = "";
-    (CONCEPTS[sel.set] || []).forEach(function (pg) { elConceptBody.appendChild(renderConceptPage(pg)); });
+    cState = { pages: CONCEPTS[sel.set] || [], p: 0, c: 0, list: false };
+    if (!cState.pages.length) return;
     elStart.hidden = true;
     elConcept.hidden = false;
-    window.scrollTo(0, 0);
+    drawConcept();
   }
 
   function showStart() {

@@ -311,9 +311,20 @@
   }
   .pick-count { font-size: 13px; color: var(--muted); margin: 4px 0 16px; }
   .concept-btn { margin-bottom: 10px; color: var(--accent); border-color: var(--accent); }
-  .concept-page { margin: 14px 0 24px; }
-  .concept-page + .concept-page { border-top: 1px solid var(--border); padding-top: 16px; }
-  .concept-title { font-size: 18px; margin: 0 0 10px; }
+  .concept-tabs { margin: 12px 0 4px; }
+  .concept-tabs .pick-btn { font-size: 13px; padding: 6px 10px; }
+  .concept-title { font-size: 18px; margin: 14px 0 10px; }
+  .concept-card { min-height: 300px; }
+  .card-term { font-size: 22px; font-weight: 700; margin: 18px 0 4px; }
+  .card-full { color: var(--muted); font-size: 14px; margin-bottom: 14px; }
+  .card-desc { font-size: 16px; line-height: 1.7; margin: 0 0 12px; }
+  .concept-card .term-ref { display: block; font-size: 12px; color: var(--muted); }
+  .concept-nav { display: flex; align-items: center; gap: 8px; margin: 14px 0 10px; }
+  .concept-nav .secondary { flex: 1; color: var(--accent); border-color: var(--accent); }
+  .concept-nav .secondary:disabled { opacity: 0.35; }
+  .concept-pos { font-size: 13px; color: var(--muted); min-width: 52px; text-align: center; }
+  .concept-toggle { margin-bottom: 12px; }
+  .concept-terms .tappable-term { cursor: pointer; color: var(--accent); }
   .concept-summary { white-space: pre-line; line-height: 1.65; font-size: 15px; margin: 0 0 14px; }
   .concept-terms { margin: 0; }
   .concept-terms dt { font-weight: 700; margin-top: 12px; }

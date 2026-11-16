@@ -10,7 +10,7 @@ import json
 import os
 import sys
 
-from validator import (CONCEPTS_FILE, lint, load_sets, load_yaml_files, question_files,
+from validator import (ACTOR_ORDER, CONCEPTS_FILE, lint, load_sets, load_yaml_files, question_files,
                        validate, validate_concepts, validate_sets)
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
@@ -50,7 +50,8 @@ def build(paths, out_path):
     html = (load_template()
             .replace("__QUIZ_DATA__", to_json(clean))
             .replace("__SETS_DATA__", to_json(sets))
-            .replace("__CONCEPTS_DATA__", to_json(concepts)))
+            .replace("__CONCEPTS_DATA__", to_json(concepts))
+            .replace("__ACTOR_ORDER__", to_json(ACTOR_ORDER)))
 
     with open(out_path, "w", encoding="utf-8") as f:
         f.write(html)

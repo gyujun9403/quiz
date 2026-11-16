@@ -101,14 +101,21 @@
     elFeedback.hidden = false;
   }
 
-  // 참가자 목록: q.items를 순서대로 훑으며 처음 등장하는 순서로 레인을 고정한다.
+  // 참가자(장비) 레인 순서. 모든 다이어그램에서 같은 장비가 같은 쪽에 오도록 ACTOR_ORDER
+  // (validator.py, 단말 쪽 왼쪽 → 서버·외부망 오른쪽)로 정렬한다. 목록에 없는 참가자는
+  // 오른쪽 끝에 처음 등장한 순서로 놓는다.
+  var ACTOR_ORDER = JSON.parse(document.getElementById("actor-order").textContent);
   function collectActors(items) {
     var actors = [];
     items.forEach(function (it) {
       if (actors.indexOf(it.from) === -1) actors.push(it.from);
       if (actors.indexOf(it.to) === -1) actors.push(it.to);
     });
-    return actors;
+    function rank(a) {
+      var r = ACTOR_ORDER.indexOf(a);
+      return r === -1 ? ACTOR_ORDER.length + actors.indexOf(a) : r;
+    }
+    return actors.slice().sort(function (a, b) { return rank(a) - rank(b); });
   }
 
   // steps의 앞 nSteps 단계를 다이어그램 행으로 바꾼다. rt 단계는 요청(from→to)·응답(to→from)

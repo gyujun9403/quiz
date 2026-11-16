@@ -23,6 +23,18 @@ ALLOWED_TAGS = {
 ALLOWED_DIFFICULTY = {"basic", "advanced"}
 # 중요도: 3=★★★ 필수(매일 보는 것), 2=★★ 중요(운영·장애 분석에 자주), 1=★ 참고(드문 예외·번호 암기)
 ALLOWED_IMPORTANCE = {1, 2, 3}
+# 시퀀스 다이어그램의 장비(참가자) 레인 순서, 왼쪽 → 오른쪽. 단말(UE) 쪽에 가까운 장비를 왼쪽에,
+# 서버와 외부망에 가까운 장비를 오른쪽에 둔다. EPC는 TS 23.401 그림의 장비 순서(UE, eNodeB, MME,
+# S-GW, P-GW, PCRF, HSS)를 따른다. order 문제·개념 페이지 흐름 그림이 이 순서로 레인을 놓는다.
+# 목록에 없는 참가자는 오른쪽 끝에 처음 등장한 순서로 놓이고, lint가 경고한다.
+# steps 문제는 actors 필드로 순서를 직접 정하며, 같은 규칙을 따라 적는다.
+ACTOR_ORDER = [
+    "발신자", "단말", "UE", "eNodeB",           # 단말 쪽 (SIP 2자 흐름의 발신자·단말 포함)
+    "프록시", "P-CSCF", "MME",                  # 접속·첫 홉 제어
+    "I-CSCF", "S-CSCF", "AS", "S-GW", "P-GW",   # 코어 제어·게이트웨이
+    "PCRF", "HSS", "EIR",                       # 서버
+    "등록서버", "착신자", "상대망",              # 상대편·외부망
+]
 VALID_TYPES = {"mcq", "ox", "short", "order", "steps", "match"}
 MATCH_MIN_PAIRS, MATCH_MAX_PAIRS = 2, 6
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
@@ -248,6 +260,15 @@ def lint(questions):
     """실패로 막지는 않지만 고치는 게 좋은 문제를 경고로 돌려준다."""
     warnings = []
     for q in questions:
+        if q.get("type") == "order":
+            names = {x for it in (q.get("items") or []) + (q.get("decoys") or [])
+                     if isinstance(it, dict) for x in (it.get("from"), it.get("to"))}
+            unknown = sorted(n for n in names if isinstance(n, str) and n not in ACTOR_ORDER)
+            if unknown:
+                warnings.append(
+                    f"[{q.get('id')}] ACTOR_ORDER에 없는 참가자 {unknown} — 다이어그램 오른쪽 끝에 놓임. "
+                    f"validator.py의 ACTOR_ORDER에 위치를 정해 추가할 것"
+                )
         if q.get("type") != "mcq":
             continue
         choices, answer = q.get("choices"), q.get("answer")

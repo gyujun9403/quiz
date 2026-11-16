@@ -1,7 +1,8 @@
 # IMS end-to-end 절차 서사 (SIP + Diameter 통합). 실제 이벤트별 "전체 흐름" 암기용.
 # steps 타입: 각 단계는 {from, to, act} 화살표. 워크스루에서 매 단계 대상(from→to)과
 # 동작(act)을 각각 후보에서 고르면 시퀀스 다이어그램에 화살표가 그려지며 쌓인다.
-# actors: lifeline(레인) 좌→우 순서 고정. decoy는 다른 시나리오의 {from,to,act}(주로
+# actors: lifeline(레인) 좌→우 순서 고정. 단말(UE) 쪽을 왼쪽, 서버·외부망을 오른쪽에 둔다(validator.py의
+# ACTOR_ORDER와 같은 규칙. 착신 서사의 '발신자'는 외부망이라 오른쪽). decoy는 다른 시나리오의 {from,to,act}(주로
 # 커맨드)로 오답 보기 풀을 채운다(그려지진 않음).
 # 흐름/역할은 3GPP TS 24.229(IMS SIP 절차)·TS 29.228(Cx)에 대조. 커맨드 쌍(예: UAR/UAA)은
 # 화살표 하나로 압축 표기하고, 내부 처리(iFC 등)·릴레이 세부는 explain에 둔다.
@@ -54,7 +55,7 @@
   tags: [message-flow, concept]
   question: "다른 사람이 이 IMS 가입자에게 전화를 걸었을 때(착신, terminating)의 전체 절차를,
     각 단계의 대상과 동작을 골라 순서대로 완성하라."
-  actors: ["발신자", "I-CSCF", "HSS", "S-CSCF", "UE"]
+  actors: ["UE", "I-CSCF", "S-CSCF", "HSS", "발신자"]
   steps:
     - {from: "발신자", to: "I-CSCF", act: "INVITE"}
     - {from: "I-CSCF", to: "HSS", act: "LIR/LIA", rt: true}
@@ -86,7 +87,7 @@
   tags: [message-flow, concept]
   question: "등록을 마친 IMS 가입자가 전화를 걸 때(발신, originating)의 전체 절차를, 각 단계의
     대상과 동작을 골라 순서대로 완성하라."
-  actors: ["UE", "P-CSCF", "PCRF", "S-CSCF", "상대망"]
+  actors: ["UE", "P-CSCF", "S-CSCF", "PCRF", "상대망"]
   steps:
     - {from: "UE", to: "P-CSCF", act: "INVITE"}
     - {from: "P-CSCF", to: "S-CSCF", act: "INVITE"}
@@ -327,7 +328,7 @@
   importance: 3
   tags: [message-flow, concept]
   question: "핸드폰을 켜서 LTE 망에 처음 접속(EPC Attach)할 때의 전체 절차를, 각 단계의 대상(누가→누구)과 동작을 골라 순서대로 완성하라."
-  actors: ["UE", "MME", "HSS", "S-GW"]
+  actors: ["UE", "MME", "S-GW", "HSS"]
   steps:
     - {from: "UE", to: "MME", act: "Attach Request"}
     - {from: "MME", to: "HSS", act: "AIR/AIA", rt: true}

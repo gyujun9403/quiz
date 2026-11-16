@@ -11,7 +11,7 @@ import os
 import re
 import sys
 
-from validator import (ACTOR_ORDER, CONCEPTS_FILE, is_openable, lint, load_sets, load_yaml_files, question_files,
+from validator import (ACTOR_ORDER, CONCEPTS_FILE, lint, load_sets, load_yaml_files, question_files,
                        validate, validate_concepts, validate_sets)
 
 WEB_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web")
@@ -46,7 +46,6 @@ def build(paths, out_path):
     for q in questions:
         q = dict(q)
         q.pop("_file", None)
-        q["openable"] = is_openable(q)
         clean.append(q)
 
     def to_json(obj):
@@ -61,7 +60,7 @@ def build(paths, out_path):
         f.write(html)
 
     # claude.ai 게시용 사본: 게시할 때 <html>/<head>/<body> 뼈대가 씌워지므로 뼈대 없이
-    # <title>, <style>, body 내용만 둔다. 여기서는 주관식 모드(Claude 채점)가 켜진다.
+    # <title>, <style>, body 내용만 둔다. 여기서는 주관식 문제에 [Claude 채점] 버튼이 추가로 켜진다.
     title = re.search(r"<title>.*?</title>", html, re.S).group(0)
     style = re.search(r"<style>.*?</style>", html, re.S).group(0)
     body = re.search(r"<body>(.*)</body>", html, re.S).group(1)
@@ -69,9 +68,9 @@ def build(paths, out_path):
         f.write(title + "\n" + style + "\n" + body.strip() + "\n")
 
     n_pages = sum(len(v) for k, v in concepts.items() if not any(s["id"] == k and s["include"] for s in sets))
-    n_open = sum(1 for q in clean if q["openable"])
+    n_open = sum(1 for q in clean if q["type"] == "open")
     print(f"생성 완료: {out_path} ({len(clean)}문제, {len(paths)}개 파일, 세트 {len(sets)}개, 개념 페이지 {n_pages}개)")
-    print(f"           {ARTIFACT_OUT} (claude.ai 게시용, 주관식 대상 {n_open}문제)")
+    print(f"           {ARTIFACT_OUT} (claude.ai 게시용) · 주관식 {n_open}문제")
     for w in lint(questions):
         print(" 경고:", w)
 

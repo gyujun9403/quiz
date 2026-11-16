@@ -702,3 +702,47 @@
     MME는 RES가 XRES와 같으면 인증 성공으로 본다.
     KASME는 이후 NAS·무선 구간 키를 만드는 중간 키다.
   ref: "3GPP TS 29.272 §7.3.18; TS 33.401 §6.1.1"
+
+# ---------------- 주관식 (직접 써 보고 자가 채점) ----------------
+
+- id: diam-0040
+  type: open
+  topic: Diameter
+  difficulty: basic
+  importance: 3
+  tags: [command-code, message-flow]
+  question: "IMS 첫 등록에서 I-CSCF와 S-CSCF가 HSS와 주고받는 Cx 커맨드 세 쌍을 순서대로 들고, 각각의 목적을 설명하라."
+  answer: |
+    먼저 I-CSCF가 UAR/UAA로 사용자의 등록을 인가받고, S-CSCF를 정하는 데 필요한 정보를 받는다.
+    다음으로 S-CSCF가 MAR/MAA로 인증 벡터를 받아 단말에 401 챌린지를 보낸다.
+    단말이 자격증명으로 다시 등록하면 S-CSCF가 SAR/SAA로 자신을 그 사용자에 할당하고 사용자 프로필을 받는다.
+  points:
+    - "UAR/UAA: I-CSCF, 등록 인가·S-CSCF 선택"
+    - "MAR/MAA: S-CSCF, 인증 벡터 → 401 챌린지"
+    - "SAR/SAA: S-CSCF, 서버 할당·프로필 다운로드"
+    - "순서는 UAR → MAR → SAR"
+  explain: |
+    LIR/LIA는 등록이 아니라 착신 때 서빙 S-CSCF를 찾는 커맨드다.
+  ref: "3GPP TS 29.228; TS 29.229 §6.1"
+
+- id: diam-0041
+  type: open
+  topic: Diameter
+  difficulty: basic
+  importance: 2
+  tags: [result-code, concept]
+  question: "Diameter Result-Code의 천 단위 대역(1xxx~5xxx)이 각각 무엇을 뜻하는지 설명하라."
+  answer: |
+    1xxx는 정보(Informational), 2xxx는 성공(Success)이다.
+    3xxx는 프로토콜 오류(Protocol Errors)로, 홉 단위로 처리하며 E 비트를 세운 응답에만 쓴다.
+    4xxx는 일시적 실패(Transient Failures)로, 지금은 처리하지 못했지만 나중에는 될 수 있다는 뜻이다.
+    5xxx는 영구적 실패(Permanent Failure)로, 다시 시도하지 말아야 한다.
+  points:
+    - "1xxx 정보, 2xxx 성공"
+    - "3xxx 프로토콜 오류(홉 단위, E 비트)"
+    - "4xxx 일시적 실패(나중에 될 수 있음)"
+    - "5xxx 영구적 실패(다시 시도하지 않음)"
+  explain: |
+    정의되지 않은 대역의 코드는 영구적 실패로 처리해야 한다(MUST).
+    3GPP의 Experimental-Result-Code도 같은 대역 규칙을 따른다(예: 2001 첫 등록 성공, 5001 사용자 없음).
+  ref: "RFC 6733 §7.1, §7.1.3, §7.1.4, §7.1.5; 3GPP TS 29.230 §8.1"

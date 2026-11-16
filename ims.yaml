@@ -364,3 +364,44 @@
     S-GW는 Create Session을 P-GW로 넘긴다.
     MME가 EIR에 ECR/ECA로 단말을 확인하는 단계(5b)는 선택 사항이라 넣지 않았다.
   ref: "3GPP TS 23.401 §5.3.2.1 (Figure 5.3.2.1-1); TS 29.272 §5.2.1.1, §5.2.3.1; TS 33.401 §6.1.1"
+
+# ---------------- 주관식 (직접 써 보고 자가 채점) ----------------
+
+- id: ims-0019
+  type: open
+  topic: IMS
+  difficulty: basic
+  importance: 3
+  tags: [concept]
+  question: "P-CSCF, I-CSCF, S-CSCF의 역할 차이를 설명하라."
+  answer: |
+    P-CSCF는 단말의 첫 SIP 접점(Gm)이고, 미디어 정책을 위해 PCRF와 Rx로 연동한다. 로밍이면 방문망에 있다.
+    I-CSCF는 홈망의 진입점이다. HSS에 Cx로 물어(등록 때 UAR, 착신 때 LIR) 사용자를 담당할 S-CSCF를 찾는다.
+    S-CSCF는 항상 홈망에 있는 세션 제어 노드다. 등록을 처리하는 레지스트라이고, 사용자 프로필을 받아 iFC로 AS를 트리거한다.
+  points:
+    - "P-CSCF: 단말의 첫 접점(Gm), PCRF와 Rx"
+    - "I-CSCF: 홈망 진입점, HSS 조회로 S-CSCF를 찾음"
+    - "S-CSCF: 홈망 세션 제어·레지스트라, 프로필과 iFC"
+  explain: |
+    S-CSCF를 고르는 것은 P-CSCF가 아니라 I-CSCF다.
+  ref: "3GPP TS 23.228 (CSCF 기능)"
+
+- id: ims-0020
+  type: open
+  topic: IMS
+  difficulty: basic
+  importance: 2
+  tags: [message-flow]
+  question: "다른 망의 사용자가 IMS 가입자에게 전화를 걸 때, 착신망에서 INVITE가 단말까지 가는 과정을 설명하라."
+  answer: |
+    착신망의 진입점인 I-CSCF가 INVITE를 받는다.
+    I-CSCF는 그 사용자를 담당하는 S-CSCF를 모르므로 LIR/LIA로 HSS에 서빙 S-CSCF 이름을 조회한다.
+    I-CSCF는 그 S-CSCF로 INVITE를 넘기고, S-CSCF가 착신 서비스(iFC)를 적용한 뒤 단말 쪽으로 보낸다.
+  points:
+    - "착신망 진입점 I-CSCF가 INVITE를 받음"
+    - "LIR/LIA로 HSS에 서빙 S-CSCF를 조회"
+    - "S-CSCF로 넘기고, iFC 적용 후 단말로"
+  explain: |
+    실제로는 S-CSCF와 단말 사이에 P-CSCF가 있다.
+    UAR은 등록용 커맨드라 착신 경로를 찾는 데는 쓰지 않는다.
+  ref: "3GPP TS 24.229; TS 29.228; TS 29.229 §6.1.5"

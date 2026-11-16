@@ -242,6 +242,31 @@
   }
   .open-status { font-size: 13px; color: var(--muted); min-height: 18px; margin-bottom: 8px; }
   .open-cancel { display: block; margin: 10px auto 0; }
+  .open-claude { margin-top: 8px; color: var(--accent); border-color: var(--accent); }
+  .my-answer {
+    white-space: pre-wrap;
+    line-height: 1.55;
+    padding: 10px 12px;
+    border: 1px dashed var(--border);
+    border-radius: 10px;
+    margin-bottom: 12px;
+  }
+  .model-answer { line-height: 1.65; margin-bottom: 12px; }
+  .model-answer p { margin: 0 0 6px; }
+  .point-list { margin: 0 0 8px; padding-left: 20px; line-height: 1.6; }
+  .point-check { display: flex; flex-direction: column; gap: 6px; margin-bottom: 8px; }
+  .point-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 12px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    line-height: 1.5;
+    cursor: pointer;
+  }
+  .point-row input { width: 20px; height: 20px; margin: 1px 0 0; flex: none; accent-color: var(--accent); }
+  .point-row:has(input:checked) { background: var(--good-bg); border-color: var(--good-fg); }
   .grade-box { padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; line-height: 1.55; }
   .grade-box.correct { background: var(--good-bg); }
   .grade-box.partial { background: var(--accent-bg); }

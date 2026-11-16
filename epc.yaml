@@ -593,3 +593,151 @@
     DL Buffering Requested는 MME가 S-GW에 보내는 확장 버퍼링 요청이다.
     Active Time은 PSM 진입 전 대기 시간이다.
   ref: "3GPP TS 23.401 §5.3.4B.2 (1단계), §5.3.5"
+
+# ---------------- 주관식 (직접 써 보고 자가 채점) ----------------
+
+- id: epc-0033
+  type: open
+  topic: EPC
+  difficulty: basic
+  importance: 3
+  tags: [message-flow]
+  question: "LTE Attach 절차의 큰 흐름을 인증 → 위치 등록 → 베어러 생성 → 수락 순으로, 각 단계에서 MME가 누구와 무엇을 주고받는지 설명하라."
+  answer: |
+    단말이 Attach Request를 보낸다.
+    MME는 HSS에서 AIR/AIA로 인증 벡터를 받아 단말과 EPS AKA 인증을 한다.
+    인증이 끝나면 ULR/ULA로 HSS에 서빙 MME로 등록하고 가입자 데이터를 받는다.
+    그다음 S-GW(→ P-GW)에 Create Session으로 기본 베어러를 만든다. 이때 P-GW가 단말 주소를 할당한다.
+    단말에 Attach Accept를 보내고, Attach Complete를 받으면 Modify Bearer로 하향 경로를 완성한다.
+  points:
+    - "AIR/AIA로 인증 벡터, EPS AKA 인증"
+    - "ULR/ULA로 위치 등록·가입자 데이터"
+    - "Create Session으로 기본 베어러(P-GW가 단말 주소 할당)"
+    - "Attach Accept → Attach Complete → Modify Bearer"
+  explain: |
+    IMS 등록의 MAR(인증) → SAR(등록)과 같은 "인증 → 등록" 구조다.
+  ref: "3GPP TS 23.401 §5.3.2.1; TS 29.272 §5.2.1.1, §5.2.3.1"
+
+- id: epc-0034
+  type: open
+  topic: EPC
+  difficulty: basic
+  importance: 3
+  tags: [message-flow]
+  question: "ECM-IDLE 상태 단말 앞으로 하향 데이터가 왔을 때, 데이터가 단말에 전달되기까지의 과정을 설명하라."
+  answer: |
+    S-GW는 그 단말의 하향 TEID가 없으므로 패킷을 버퍼링하고 MME에 Downlink Data Notification(DDN)을 보낸다.
+    MME는 DDN Ack로 답하고, 단말이 등록된 TA 목록의 eNodeB들에 Paging을 보낸다.
+    페이징을 받은 단말이 Service Request를 보낸다.
+    Initial Context Setup과 Modify Bearer로 무선 구간과 S1-U가 다시 열리면, S-GW가 버퍼링한 데이터를 내려보낸다.
+  points:
+    - "S-GW가 버퍼링하고 MME에 DDN"
+    - "MME가 TA 목록의 eNodeB들에 Paging"
+    - "단말이 Service Request로 응답"
+    - "Modify Bearer로 하향 TEID를 받은 S-GW가 데이터 전달"
+  explain: |
+    PSM·eDRX 때문에 지금 깨울 수 없으면 MME가 DDN Ack로 S-GW에 버퍼링을 더 오래 하게 한다(extended buffering).
+  ref: "3GPP TS 23.401 §5.3.4.1, §5.3.4.3"
+
+- id: epc-0035
+  type: open
+  topic: EPC
+  difficulty: basic
+  importance: 3
+  tags: [concept]
+  question: "S1 release로 단말이 ECM-IDLE이 될 때, eNodeB·MME·S-GW에서 각각 무엇이 지워지고 무엇이 남는지 설명하라."
+  answer: |
+    eNodeB는 그 단말의 컨텍스트를 모두 지운다.
+    S-GW는 eNodeB 주소와 eNodeB 쪽 TEID만 지운다. 자신이 할당한 S1-U 설정과 베어러는 유지하고, 이후 오는 하향 패킷은 버퍼링한다.
+    MME는 eNodeB 관련 정보(S1-AP ID 등)만 지우고, 나머지 단말 컨텍스트와 S-GW의 S1-U 정보를 유지한다.
+    등록(EMM-REGISTERED)과 non-GBR 베어러가 남으므로, 다시 통신할 때는 Service Request만 하면 된다.
+  points:
+    - "eNodeB: 단말 컨텍스트 삭제"
+    - "S-GW: eNodeB 주소·TEID만 삭제, 자기 S1-U 설정과 베어러 유지, 하향 버퍼링"
+    - "MME: eNodeB 관련 정보만 삭제, 나머지 유지"
+    - "등록과 non-GBR 베어러 유지 → Service Request로 복귀"
+  explain: |
+    User Plane CIoT 최적화로 RRC 연결을 일시 중단(suspend)한 경우에는 eNodeB가 컨텍스트를 보관한다.
+  ref: "3GPP TS 23.401 §4.6.3.1, §5.3.5"
+
+- id: epc-0036
+  type: open
+  topic: EPC
+  difficulty: advanced
+  importance: 3
+  tags: [message-flow, transport]
+  question: "UE triggered Service Request에서 업링크가 다운링크보다 먼저 열리는 이유를 TEID로 설명하라."
+  answer: |
+    TEID는 받는 쪽이 정해서 보내는 쪽에 알려 준다.
+    MME는 Initial Context Setup Request로 S-GW 주소와 S-GW가 정한 상향 TEID를 eNodeB에 바로 준다. 그래서 무선 베어러가 서면 eNodeB가 업링크를 보낼 수 있다.
+    하향 TEID는 eNodeB가 정해 Initial Context Setup Complete로 MME에 알린다.
+    MME가 Modify Bearer Request로 이것을 S-GW에 넘긴 뒤에야 S-GW가 다운링크를 보낼 수 있다.
+  points:
+    - "TEID는 받는 쪽이 정한다"
+    - "상향 TEID(S-GW 것)는 Initial Context Setup Request로 eNodeB에 바로 전달 → 업링크 먼저"
+    - "하향 TEID(eNodeB 것)는 Complete → Modify Bearer Request로 S-GW에 전달된 뒤 다운링크"
+  explain: |
+    S-GW는 S1 release 때 eNodeB 쪽 TEID를 지웠기 때문에 Modify Bearer Request 전에는 하향으로 보낼 곳이 없다.
+  ref: "3GPP TS 23.401 §5.3.4.1, §5.3.5; TS 29.281 §3.1"
+
+- id: epc-0037
+  type: open
+  topic: EPC
+  difficulty: basic
+  importance: 2
+  tags: [concept]
+  question: "EMM 상태와 ECM 상태가 각각 무엇을 나타내는지, 그리고 휴지 단말은 보통 어떤 조합인지 설명하라."
+  answer: |
+    EMM은 등록 여부를 나타낸다. EMM-REGISTERED면 MME가 단말 위치를 TA 목록 단위로 알고, EMM-DEREGISTERED면 위치를 몰라 페이징할 수 없다.
+    ECM은 신호 연결 여부를 나타낸다. ECM-CONNECTED면 RRC와 S1-MME로 된 신호 연결이 있고 위치를 eNodeB 단위로 안다. ECM-IDLE이면 신호 연결이 없다.
+    휴지 단말은 보통 EMM-REGISTERED이면서 ECM-IDLE이다.
+  points:
+    - "EMM = 등록 여부(REGISTERED면 위치를 TA 목록 단위로 앎)"
+    - "ECM = 신호 연결 여부(CONNECTED면 RRC + S1-MME, eNodeB 단위로 앎)"
+    - "휴지 단말 = EMM-REGISTERED + ECM-IDLE"
+  explain: |
+    두 상태는 따로 움직인다. S1 release는 ECM만 바꾸고 EMM 등록은 그대로 둔다.
+  ref: "3GPP TS 23.401 §4.6.2, §4.6.3"
+
+- id: epc-0038
+  type: open
+  topic: EPC
+  difficulty: advanced
+  importance: 2
+  tags: [concept]
+  question: "PSM과 eDRX가 각각 휴지 단말의 전력을 어떻게 아끼는지, 하향 데이터가 올 때 어떻게 다른지 설명하라."
+  answer: |
+    PSM은 휴지가 된 뒤 Active 타이머가 끝나면 단말이 무선 기능을 끄는 방식이다.
+    PSM 중에는 페이징을 받지 않고, 주기적 TAU 때나 보낼 데이터가 생기면 깨어난다. MME는 단말을 등록 상태로 두되 도달할 수 없다고 본다.
+    eDRX는 페이징을 듣는 주기를 길게 늘리는 방식이라, 페이징은 받되 늦게 받는다.
+    하향 데이터가 오면 eDRX 단말은 MME가 다음 페이징 시점 직전에 페이징하고, PSM 단말은 깨어날 때까지 S-GW가 버퍼링을 더 오래 한다(extended buffering).
+  points:
+    - "PSM: Active 타이머 후 무선 기능을 꺼서 페이징을 못 받음"
+    - "PSM 해제: 주기적 TAU나 보낼 데이터가 생길 때"
+    - "eDRX: 페이징 주기를 늘림, MME가 다음 페이징 시점 직전에 페이징"
+    - "PSM 단말 앞 하향 데이터는 extended buffering"
+  explain: |
+    두 기능 모두 단말이 Attach·TAU 때 요청하고 망이 값을 정한다.
+  ref: "3GPP TS 23.401 §4.3.22, §5.13a, §5.3.4.3"
+
+- id: epc-0039
+  type: open
+  topic: EPC
+  difficulty: advanced
+  importance: 2
+  tags: [concept, transport]
+  question: "Control Plane CIoT 최적화에서 단말의 소량 업링크 데이터가 S-GW까지 가는 경로를, 일반 사용자 평면 경로와 비교해 설명하라."
+  answer: |
+    일반 사용자 평면에서는 단말 → eNodeB → S1-U(GTP-U 터널) → S-GW로 데이터가 간다.
+    Control Plane CIoT 최적화에서는 무선 베어러와 S1-U를 세우지 않는다.
+    데이터를 NAS 메시지에 EPS Bearer ID와 함께 담아 eNodeB를 거쳐(S1-AP) MME로 보낸다.
+    MME가 무결성을 확인하고 복호한 뒤 S11-U로 S-GW에 넘긴다.
+    IP 헤더 압축(ROHC)은 단말과 MME 사이에서 한다.
+  points:
+    - "일반: eNodeB → S1-U → S-GW"
+    - "CP CIoT: NAS 메시지(EPS Bearer ID 포함)로 MME에 전달"
+    - "MME → S11-U → S-GW"
+    - "ROHC는 단말과 MME 사이"
+  explain: |
+    무선 베어러와 S1-U를 세우는 신호가 없어 소량 데이터에 유리하다. 그래서 C-SGN이 지원하는 CIoT 기능이다.
+  ref: "3GPP TS 23.401 §4.2.3, §5.3.4B.1, §5.3.4B.2"

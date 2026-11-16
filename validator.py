@@ -23,18 +23,6 @@ ALLOWED_TAGS = {
 ALLOWED_DIFFICULTY = {"basic", "advanced"}
 # 중요도: 3=★★★ 필수(매일 보는 것), 2=★★ 중요(운영·장애 분석에 자주), 1=★ 참고(드문 예외·번호 암기)
 ALLOWED_IMPORTANCE = {1, 2, 3}
-# 주관식(Claude 채점) 모드에서 뺄 문제와 이유. 주관식 모드는 mcq(보기를 숨김)·order·steps를 쓰는데,
-# 보기 목록이 없으면 정답이 정해지지 않는 mcq는 여기에 등록한다.
-OPEN_EXCLUDED = {
-    "sip-0001": "보기 목록 없이 '포함되지 않는 것'을 물으면 답이 정해지지 않음",
-}
-
-
-def is_openable(q):
-    """주관식(직접 써서 Claude가 채점) 모드에 낼 수 있는 문제인지."""
-    return q.get("type") in ("mcq", "order", "steps") and q.get("id") not in OPEN_EXCLUDED
-
-
 # 시퀀스 다이어그램의 장비(참가자) 레인 순서, 왼쪽 → 오른쪽. 단말(UE) 쪽에 가까운 장비를 왼쪽에,
 # 서버와 외부망에 가까운 장비를 오른쪽에 둔다. EPC는 TS 23.401 그림의 장비 순서(UE, eNodeB, MME,
 # S-GW, P-GW, PCRF, HSS)를 따른다. order 문제·개념 페이지 흐름 그림이 이 순서로 레인을 놓는다.
@@ -47,7 +35,8 @@ ACTOR_ORDER = [
     "PCRF", "HSS", "EIR",                       # 서버
     "등록서버", "착신자", "상대망",              # 상대편·외부망
 ]
-VALID_TYPES = {"mcq", "ox", "short", "order", "steps", "match"}
+VALID_TYPES = {"mcq", "ox", "short", "order", "steps", "match", "open"}
+OPEN_MIN_POINTS, OPEN_MAX_POINTS = 2, 6
 MATCH_MIN_PAIRS, MATCH_MAX_PAIRS = 2, 6
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
 # 문제 묶음(세트) 정의 파일. 문제 파일이 아니므로 기본 문제 파일 목록(*.yaml)에서 뺀다.
@@ -172,6 +161,18 @@ def validate(questions):
                     errors.append(
                         f"[{loc}] mcq answer가 choices 인덱스 범위를 벗어남: {answer!r}"
                     )
+        elif qtype == "open":
+            # 주관식: answer는 모범 답안(글), points는 자가 채점용 핵심 요소 목록.
+            answer = q.get("answer")
+            if not isinstance(answer, str) or not answer.strip():
+                errors.append(f"[{loc}] open answer(모범 답안)가 비어 있거나 문자열이 아님")
+            points = q.get("points")
+            if not isinstance(points, list) or not (OPEN_MIN_POINTS <= len(points) <= OPEN_MAX_POINTS) \
+                    or not all(isinstance(p, str) and p.strip() for p in points):
+                errors.append(
+                    f"[{loc}] open points는 비어 있지 않은 문자열 "
+                    f"{OPEN_MIN_POINTS}~{OPEN_MAX_POINTS}개여야 함"
+                )
         elif qtype == "ox":
             answer = q.get("answer")
             if not isinstance(answer, bool):

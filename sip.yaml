@@ -1637,3 +1637,134 @@
     Bob이 보내는 요청이라 From은 Bob, To는 Alice로 바뀌었다. 태그도 함께 바뀐다.
     Call-ID는 다이얼로그 내내 같다.
   ref: "RFC 3261 §12.2.1.1, §24.2"
+
+# ---------------- 주관식 (직접 써 보고 자가 채점) ----------------
+# open 유형: answer는 모범 답안, points는 자가 채점용 핵심 요소. 사실은 위 문제들에서 검증한 것만 쓴다.
+
+- id: sip-0096
+  type: open
+  topic: SIP
+  difficulty: basic
+  importance: 3
+  tags: [message-flow]
+  question: "INVITE로 시작해 BYE로 끝나는 기본 호의 메시지 흐름을, 각 메시지를 누가 누구에게 보내는지와 함께 설명하라."
+  answer: |
+    발신자가 INVITE를 보낸다.
+    착신자는 100 Trying(받아서 처리 중)과 180 Ringing(벨이 울리는 중)을 보내고, 전화를 받으면 200 OK를 보낸다.
+    발신자는 200 OK에 ACK를 보내고, 이것으로 세션이 확립된다.
+    통화를 끝낼 때는 끊는 쪽이 BYE를 보내고 상대가 200 OK로 답한다.
+  points:
+    - "INVITE(발신자 → 착신자)로 시작한다"
+    - "100 Trying·180 Ringing 잠정 응답"
+    - "착신자가 받으면 200 OK, 발신자가 ACK로 확립(3-way)"
+    - "끊는 쪽이 BYE, 상대가 200 OK"
+  explain: |
+    BYE는 발신자와 착신자 누구든 보낼 수 있다.
+    ACK는 INVITE의 최종 응답에만 보내므로 BYE의 200 OK에는 보내지 않는다.
+  ref: "RFC 3261 §4 (Figure 1), §13.2.2.4, §15.1"
+
+- id: sip-0097
+  type: open
+  topic: SIP
+  difficulty: basic
+  importance: 3
+  tags: [method, message-flow]
+  question: "CANCEL과 BYE는 각각 언제 쓰는지, 그리고 CANCEL을 보내면 어떤 응답들이 오는지 설명하라."
+  answer: |
+    CANCEL은 아직 최종 응답을 받지 않은(진행 중인) INVITE를 취소할 때 쓴다.
+    BYE는 이미 확립된 세션을 끝낼 때 쓴다.
+    CANCEL을 보내면 CANCEL 자체에는 200 OK가 오고, 원래 INVITE에는 487 Request Terminated가 온다.
+    발신자는 487에 ACK를 보낸다.
+  points:
+    - "CANCEL: 최종 응답 전, 진행 중인 INVITE 취소"
+    - "BYE: 확립된 세션 종료"
+    - "CANCEL에는 200 OK"
+    - "원래 INVITE에는 487 Request Terminated, 발신자가 ACK"
+  explain: |
+    200 OK와 487은 서로 다른 트랜잭션(CANCEL, INVITE)에 대한 응답이다.
+    CANCEL은 INVITE가 아닌 요청에는 보내지 않는다(SHOULD NOT).
+  ref: "RFC 3261 §9.1, §9.2, §15, §17.1.1.2; RFC 3665 §3.8"
+
+- id: sip-0098
+  type: open
+  topic: SIP
+  difficulty: basic
+  importance: 3
+  tags: [header, concept]
+  question: "SIP에서 트랜잭션과 다이얼로그는 각각 무엇으로 식별하는지 설명하라."
+  answer: |
+    트랜잭션(요청 하나와 그 응답들)은 Via 헤더의 branch 값으로 식별한다.
+    RFC 3261 방식의 branch는 z9hG4bK로 시작한다.
+    다이얼로그(두 UA 사이의 지속 관계)는 Call-ID, From 태그, To 태그 세 값의 조합으로 식별한다.
+  points:
+    - "트랜잭션 = Via의 branch"
+    - "branch는 z9hG4bK로 시작"
+    - "다이얼로그 = Call-ID + From 태그 + To 태그"
+  explain: |
+    To 태그는 착신 UAS가 응답에 붙이므로 첫 INVITE에는 없다.
+    트랜잭션이 다이얼로그보다 작은 단위다.
+  ref: "RFC 3261 §8.1.1.7, §12, §17"
+
+- id: sip-0099
+  type: open
+  topic: SIP
+  difficulty: basic
+  importance: 2
+  tags: [header, response-code]
+  question: "401 Unauthorized와 407 Proxy Authentication Required의 차이를, 보내는 쪽과 주고받는 헤더 중심으로 설명하라."
+  answer: |
+    401은 UAS나 등록 서버가 보내고, 챌린지를 WWW-Authenticate 헤더에 담는다.
+    단말은 Authorization 헤더에 자격증명을 넣어 다시 요청한다.
+    407은 프록시가 보내고, 챌린지를 Proxy-Authenticate 헤더에 담는다.
+    단말은 Proxy-Authorization 헤더로 답한다.
+    자격증명을 넣어 다시 보내는 요청은 CSeq를 1 올린다.
+  points:
+    - "401: UAS·등록 서버, WWW-Authenticate → Authorization"
+    - "407: 프록시, Proxy-Authenticate → Proxy-Authorization"
+    - "다시 보내는 요청은 CSeq 증가"
+  explain: |
+    프록시는 401을 쓰면 안 된다(MUST NOT).
+    403 Forbidden은 인증으로도 해결되지 않는 거절이라 401·407과 다르다.
+  ref: "RFC 3261 §21.4.2, §21.4.8, §22.1, §22.2, §22.3"
+
+- id: sip-0100
+  type: open
+  topic: SIP
+  difficulty: advanced
+  importance: 2
+  tags: [method, concept]
+  question: "INVITE의 2xx 응답에 대한 ACK와, 486 같은 비-2xx 응답에 대한 ACK가 어떻게 다른지 설명하라."
+  answer: |
+    비-2xx에 대한 ACK는 INVITE 클라이언트 트랜잭션이 만들고, INVITE와 같은 트랜잭션에 속해 홉 단위로 오간다.
+    그래서 맨 위 Via(branch 포함)가 INVITE와 같다.
+    2xx에 대한 ACK는 UAC 코어가 다이얼로그 안의 요청처럼 만들어 상대 UA까지 종단 간에 보낸다.
+    별도 트랜잭션이라 branch가 새 값이다.
+    두 경우 모두 CSeq 번호는 INVITE와 같고 메서드만 ACK다.
+  points:
+    - "비-2xx ACK: INVITE와 같은 트랜잭션, 홉 단위"
+    - "2xx ACK: UAC 코어가 만드는 별도 트랜잭션, 종단 간, 새 branch"
+    - "CSeq 번호는 INVITE와 같고 메서드만 ACK"
+  explain: |
+    UAS는 2xx를 ACK를 받을 때까지 재전송하고, UAC는 재전송된 2xx마다 ACK를 다시 보낸다.
+  ref: "RFC 3261 §13.2.2.4, §13.3.1.4, §17.1.1.3"
+
+- id: sip-0101
+  type: open
+  topic: SIP
+  difficulty: advanced
+  importance: 2
+  tags: [method, message-flow]
+  question: "re-INVITE가 무엇인지, 누가 보낼 수 있는지, 상대가 거절하면 세션이 어떻게 되는지 설명하라."
+  answer: |
+    re-INVITE는 이미 확립된 다이얼로그 안에서 다시 보내는 INVITE다.
+    주소·포트·미디어 같은 세션 정보를 바꿀 때 쓴다.
+    발신자와 착신자 누구든 보낼 수 있다.
+    상대가 488 같은 비-2xx 최종 응답으로 거절하면 세션은 re-INVITE 전의 설정 그대로 유지된다.
+  points:
+    - "같은 다이얼로그 안의 INVITE로 세션을 수정"
+    - "발신자·착신자 모두 보낼 수 있음"
+    - "거절(비-2xx)되면 기존 세션 그대로 유지"
+  explain: |
+    다만 481이나 408을 받거나 응답이 없으면 UAC는 다이얼로그를 끝낸다.
+    양쪽이 동시에 보내 엇갈리면 받은 쪽이 491 Request Pending을 돌려준다.
+  ref: "RFC 3261 §14, §14.1, §14.2"

@@ -23,6 +23,18 @@ ALLOWED_TAGS = {
 ALLOWED_DIFFICULTY = {"basic", "advanced"}
 # 중요도: 3=★★★ 필수(매일 보는 것), 2=★★ 중요(운영·장애 분석에 자주), 1=★ 참고(드문 예외·번호 암기)
 ALLOWED_IMPORTANCE = {1, 2, 3}
+# 주관식(Claude 채점) 모드에서 뺄 문제와 이유. 주관식 모드는 mcq(보기를 숨김)·order·steps를 쓰는데,
+# 보기 목록이 없으면 정답이 정해지지 않는 mcq는 여기에 등록한다.
+OPEN_EXCLUDED = {
+    "sip-0001": "보기 목록 없이 '포함되지 않는 것'을 물으면 답이 정해지지 않음",
+}
+
+
+def is_openable(q):
+    """주관식(직접 써서 Claude가 채점) 모드에 낼 수 있는 문제인지."""
+    return q.get("type") in ("mcq", "order", "steps") and q.get("id") not in OPEN_EXCLUDED
+
+
 # 시퀀스 다이어그램의 장비(참가자) 레인 순서, 왼쪽 → 오른쪽. 단말(UE) 쪽에 가까운 장비를 왼쪽에,
 # 서버와 외부망에 가까운 장비를 오른쪽에 둔다. EPC는 TS 23.401 그림의 장비 순서(UE, eNodeB, MME,
 # S-GW, P-GW, PCRF, HSS)를 따른다. order 문제·개념 페이지 흐름 그림이 이 순서로 레인을 놓는다.

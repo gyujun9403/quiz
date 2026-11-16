@@ -21,7 +21,9 @@
   var IMP_LABEL = { "3": "★★★ 필수만", "2": "★★ 이상" };
   var TYPE_LABEL = { mcq: "객관식", ox: "O/X", short: "단답", order: "순서 나열", steps: "단계 완성", match: "짝맞추기" };
   var MODE_LABEL = { "__all__": "전체", quick: "짧은 문제", order: "순서 나열", steps: "단계 완성" };
-  var sel = { set: "__all__", topic: "__all__", difficulty: "__all__", importance: "__all__", mode: "__all__" };
+  var sel = { set: "__all__", topic: "__all__", difficulty: "__all__", importance: "__all__", mode: "__all__",
+              answer: "choice" };
+  var ANSWER_LABEL = { choice: "보기에서 고르기", open: "직접 써서 Claude 채점" };
 
   var elHdr = document.getElementById("hdr");
   var elDeckChange = document.getElementById("deck-change");
@@ -216,6 +218,120 @@
   // 정답 순서/방향(q.items)을 읽기 전용 시퀀스 다이어그램으로 그린다. 채점 후 reveal에서만 쓴다.
   function buildDiagram(items) {
     return renderDiagram(collectActors(items), items, null);
+  }
+
+  // ---- 주관식 (Claude 채점) ----
+  // claude.ai에 게시한 페이지에서만 켜진다(claude.use("sample")이 함수를 줄 때). 사용자가 쓴 답을
+  // 문제 데이터의 기준 정답·해설과 함께 Claude에게 보내 채점받는다. Claude는 기준 정답만 근거로 판단한다.
+  // GitHub Pages처럼 window.claude가 없는 곳에서는 답 방식 줄이 숨겨지고 지금과 똑같이 동작한다.
+  var SAMPLE = null;
+  var openCtl = null; // 진행 중인 채점 요청. PASS나 다음 문제로 넘어가면 취소한다.
+  var elAnswerGroup = document.getElementById("answer-group");
+  var elPickAnswer = document.getElementById("pick-answer");
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("sample").then(function (fn) {
+      if (!fn) return;
+      SAMPLE = fn;
+      elAnswerGroup.hidden = false;
+      refreshPicker();
+    }, function () {});
+  }
+
+  // 채점 기준이 되는 정답을 글로 만든다(mcq는 정답 보기, order·steps는 번호 붙인 흐름).
+  function referenceText(q) {
+    if (q.type === "mcq") return q.choices[q.answer];
+    var rows = q.type === "steps" ? expandStepRows(q.steps, q.steps.length) : q.items;
+    return rows.map(function (r, i) { return (i + 1) + ". " + r.msg + " (" + r.from + " → " + r.to + ")"; }).join("\n");
+  }
+
+  function gradingPrompt(q, answer) {
+    var flow = q.type !== "mcq";
+    return [
+      "너는 통신 프로토콜(SIP·Diameter·IMS·EPC) 학습 퀴즈의 채점자다.",
+      "아래 [기준 정답]과 [해설]만 근거로 [학습자 답]을 채점하라.",
+      "규칙:",
+      "- 기준 정답과 해설에 없는 사실로 판단하지 않는다. 네가 아는 다른 지식으로 기준 정답을 바꾸지 않는다.",
+      "- 표현이 달라도 뜻이 같으면 맞은 것으로 본다. 약어와 풀네임, 한글과 영어 표기, 띄어쓰기 차이는 무시한다.",
+      flow ? "- 흐름 문제다. 메시지의 순서와 보내는 쪽·받는 쪽이 기준 정답과 맞는지 본다. 메시지 이름이 조금 달라도 같은 메시지면 맞다."
+           : "- 객관식 문제의 보기를 숨기고 낸 문제다. 기준 정답의 핵심 내용을 담았는지 본다.",
+      "- 핵심이 모두 맞으면 correct, 일부만 맞거나 일부가 틀리면 partial, 핵심이 없거나 틀리면 wrong.",
+      "- feedback은 한국어 2~4문장. 맞은 점, 빠진 점, 틀린 점을 구체적으로 학습자에게 말하듯 쓴다.",
+      '다른 말 없이 JSON 하나로만 답하라: {"verdict": "correct" 또는 "partial" 또는 "wrong", "feedback": "..."}',
+      "",
+      "[문제]", q.question,
+      "", "[기준 정답]", referenceText(q),
+      "", "[해설]", q.explain,
+      "", "[학습자 답]", answer
+    ].join("\n");
+  }
+
+  var GRADE_ERROR = {
+    not_granted: "Claude 사용을 허용하지 않아 채점할 수 없습니다. 'PASS'로 정답을 확인하세요.",
+    sampling_disabled: "이 계정에서는 Claude 채점을 쓸 수 없습니다. 'PASS'로 정답을 확인하세요.",
+    rate_limited: "채점 요청이 많거나 사용량 한도에 닿았습니다. 잠시 뒤에 다시 눌러 주세요.",
+    session_expired: "claude.ai 로그인이 만료되었습니다. 다시 로그인한 뒤 눌러 주세요.",
+    invalid_json: "채점 결과를 읽지 못했습니다. 한 번 더 눌러 주세요.",
+    refused: "Claude가 이 답을 채점하지 않았습니다. 답을 고쳐서 다시 눌러 주세요."
+  };
+
+  function renderOpen(q) {
+    elAnswerArea.appendChild(el("div", {
+      cls: "order-label",
+      text: q.type === "mcq" ? "답을 직접 써 보세요. Claude가 기준 정답과 비교해 채점합니다."
+                             : "흐름을 순서대로 써 보세요. 누가 누구에게 무엇을 보내는지 적습니다."
+    }));
+    var box = el("textarea", { cls: "open-input" });
+    box.id = "open-answer";
+    box.rows = q.type === "mcq" ? 3 : 6;
+    box.placeholder = q.type === "mcq" ? "예: 착신 단말이 다른 통화 중이라 486을 보낸다"
+                                       : "예: 1. UE → MME: Attach Request\n2. MME → HSS: AIR ...";
+    elAnswerArea.appendChild(box);
+    var status = el("div", { cls: "open-status" });
+    var submit = el("button", { cls: "primary", text: "채점 받기" });
+    var cancel = el("button", { cls: "linkbtn open-cancel", text: "채점 취소" });
+    cancel.hidden = true;
+    cancel.addEventListener("click", function () { if (openCtl) openCtl.abort(); });
+    submit.addEventListener("click", function () {
+      var answer = box.value.trim();
+      if (answered || !answer || submit.disabled) return;
+      submit.disabled = true;
+      box.readOnly = true;
+      cancel.hidden = false;
+      status.textContent = "채점 중입니다. 처음 한 번은 Claude 사용을 허용할지 묻습니다.";
+      var ctl = openCtl = new AbortController();
+      SAMPLE.json(gradingPrompt(q, answer), { signal: ctl.signal, modelTier: "default", effort: "low" })
+        .then(function (res) {
+          if (answered || openCtl !== ctl) return; // PASS·다음 문제로 이미 넘어감
+          openCtl = null;
+          var v = res && res.verdict;
+          if (v !== "correct" && v !== "partial" && v !== "wrong") throw { code: "invalid_json" };
+          status.textContent = "";
+          cancel.hidden = true;
+          var key = el("div");
+          var fb = el("div", { cls: "grade-box " + v });
+          fb.appendChild(el("div", { cls: "grade-head", text: "Claude 채점" }));
+          fb.appendChild(el("div", { text: String(res.feedback || "") }));
+          key.appendChild(fb);
+          key.appendChild(answerNode(q)); // 기준 정답(mcq는 "정답: …", 흐름은 "정답 흐름" 그림)
+          showFeedback(v === "correct", q.explain, q.ref, key);
+          if (v === "partial") {
+            elVerdict.textContent = "일부 정답";
+            elVerdict.className = "verdict partial";
+          }
+        })
+        .catch(function (e) {
+          if (answered || openCtl !== ctl) return;
+          openCtl = null;
+          cancel.hidden = true;
+          submit.disabled = false;
+          box.readOnly = false;
+          var code = e && e.code;
+          status.textContent = code === "cancelled" ? "" : (GRADE_ERROR[code] || "채점 중 연결이 끊겼습니다. 다시 눌러 주세요.");
+        });
+    });
+    elAnswerArea.appendChild(status);
+    elAnswerArea.appendChild(submit);
+    elAnswerArea.appendChild(cancel);
   }
 
   function renderMcq(q) {
@@ -609,6 +725,7 @@
   }
 
   function render(q) {
+    if (openCtl) { openCtl.abort(); openCtl = null; }
     current = q;
     answered = false;
     // 배지: 주제·유형·난이도 + 문제 ID(오류 제보 시 문제를 지목하는 용도). tags는 내부 분류용이라 안 보인다.
@@ -625,7 +742,8 @@
     elFeedback.hidden = true;
     elPassBtn.hidden = false;
 
-    if (q.type === "mcq") renderMcq(q);
+    if (sel.answer === "open" && q.openable && SAMPLE) renderOpen(q);
+    else if (q.type === "mcq") renderMcq(q);
     else if (q.type === "ox") renderOx(q);
     else if (q.type === "short") renderShort(q);
     else if (q.type === "order") renderOrder(q);
@@ -659,6 +777,7 @@
 
   elPassBtn.addEventListener("click", function () {
     if (answered) return;
+    if (openCtl) { openCtl.abort(); openCtl = null; }
     elAnswerArea.innerHTML = "";
     hideTermPop();
     showFeedback(null, current.explain, current.ref, answerNode(current));
@@ -690,6 +809,7 @@
     return DATA.filter(function (q) {
       return (!inSet || inSet.indexOf(q.id) !== -1) &&
              (sel.topic === "__all__" || q.topic === sel.topic) &&
+             (sel.answer !== "open" || q.openable) &&
              (sel.difficulty === "__all__" || q.difficulty === sel.difficulty) &&
              (sel.importance === "__all__" || q.importance >= Number(sel.importance)) &&
              (sel.mode === "__all__" || modeOf(q) === sel.mode);
@@ -708,6 +828,13 @@
   }
 
   function refreshPicker() {
+    // 답 방식 줄: '전체' 없이 두 값만. makeRow는 '전체'를 앞에 붙이므로 직접 만든다.
+    elPickAnswer.innerHTML = "";
+    ["choice", "open"].forEach(function (v) {
+      var btn = el("button", { cls: "pick-btn" + (sel.answer === v ? " sel" : ""), text: ANSWER_LABEL[v] });
+      btn.addEventListener("click", function () { sel.answer = v; refreshPicker(); });
+      elPickAnswer.appendChild(btn);
+    });
     makeRow(elPickSet, "set", SETS.map(function (s) { return s.id; }), function (id) { return setById[id].name; });
     makeRow(elPickTopic, "topic", topicVals, function (t) { return t; });
     makeRow(elPickDiff, "difficulty", diffVals, function (d) { return DIFF_LABEL[d] || d; });
@@ -724,6 +851,7 @@
     parts.push(sel.topic === "__all__" ? "전체" : sel.topic);
     parts.push(sel.difficulty === "__all__" ? "전체" : DIFF_LABEL[sel.difficulty]);
     if (sel.importance !== "__all__") parts.push(IMP_LABEL[sel.importance]);
+    if (sel.answer === "open") parts.push("주관식");
     if (sel.mode !== "__all__") parts.push(MODE_LABEL[sel.mode]);
     return parts.join(" · ") + " ▾";
   }

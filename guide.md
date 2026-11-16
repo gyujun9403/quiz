@@ -73,6 +73,8 @@
   문제마다 불변 ID만 미리 확보해 둔다(아래 참조).
 - 상태를 저장하지 않으므로 서버가 필요 없다. 생성된 단일 HTML 파일(`quiz.html`)을 GitHub
   Pages로 배포한다(아래 "배포" 절). PWA/서비스워커/localStorage 불필요.
+- 같은 화면을 claude.ai에도 비공개로 게시한다(2026-11-16). 거기서는 주관식 답을 Claude가 채점하는
+  모드가 켜진다(아래 "주관식 모드" 절). 별도 API 키는 필요 없다(보는 사람의 claude.ai 계정으로 호출).
 
 ## 개발 순서 (사용자가 정한 방식)
 
@@ -367,6 +369,19 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
     5글자 이상 겹치는 용어를 뺀다.
   - 영문·숫자·하이픈이 바로 붙어 있으면 용어로 보지 않는다(예: "TA"는 "TAU" 안에서 찾지 않음).
 
+- **주관식 모드 (Claude 채점, 2026-11-16 사용자 승인).** claude.ai에 게시한 페이지에서
+  `claude.use("sample")`이 함수를 주면 시작 화면에 **답 방식** 줄([보기에서 고르기][직접 써서 Claude
+  채점])이 나타난다. GitHub Pages처럼 `window.claude`가 없는 곳에서는 줄이 숨고 지금과 똑같이 동작한다.
+  - 대상: mcq(보기를 숨김), order, steps. `validator.py`의 `OPEN_EXCLUDED`에 등록한 문제는 뺀다(보기
+    목록 없이는 답이 정해지지 않는 mcq. 예: sip-0001 "포함되지 않는 것은?"). 새 mcq가 그런 형태면 등록한다.
+    빌드가 문제마다 `openable`을 계산해 넣는다.
+  - 채점: 사용자가 쓴 답을 문제 데이터의 **기준 정답**(mcq는 정답 보기, 흐름은 번호 붙인 메시지·방향)과
+    **해설**과 함께 보내고, Claude는 그것만 근거로 correct·partial·wrong과 한국어 피드백을 JSON으로 준다.
+    Claude가 정답을 새로 지어내지 않게 하는 것이 "사실 환각" 규율과 맞추는 핵심이다.
+  - 결과 화면: 정답·일부 정답·오답, Claude 피드백, 기준 정답(정답 한 줄 또는 정답 흐름 그림), 해설, 근거.
+    채점 중에는 [채점 취소]가 있고, PASS나 다음 문제로 넘어가면 진행 중인 채점을 취소한다.
+  - 처음 채점할 때 claude.ai가 Claude 사용 허용을 묻는다. 채점마다 보는 사람의 Claude 사용량이 쓰인다.
+
 ## UX 제약 (버스 + 아이폰)
 
 - 입력은 **탭 위주.** `mcq`/`ox`가 주력. `short`는 짧은 것(숫자·약어)만.
@@ -390,6 +405,12 @@ SIP/Diameter 자료는 콜론+공백 천지다(`Result-Code: 2001`, `Via: SIP/2.
 - 배포 순서: YAML이나 `web/`을 고친다 → `python3 build.py` → 바뀐 `quiz.html`까지 함께
   커밋 → `git push`. Pages는 커밋된 `quiz.html`을 그대로 배포하므로, 빌드를 빼먹으면
   변경이 반영되지 않는다.
+- **claude.ai 게시본도 함께 갱신한다.** `build.py`는 `claude-quiz.html`(게시용 사본, `<html>`/`<head>`/
+  `<body>` 뼈대 없이 `<title>`·`<style>`·본문만, git에 넣지 않음)도 만든다. 이 파일을 Claude Code의
+  Artifact 도구로 다시 게시한다. 게시 주소: `https://claude.ai/artifact/Mjd45SQDymyC1wLYZS22Xg`
+  (비공개, capabilities `{sample: {}}`). 다른 세션·다른 컴퓨터에서는 이 URL을 `url`로 넘겨 게시해야 같은
+  주소가 갱신된다(URL 없이 게시하면 새 artifact가 생긴다).
+- CSS 색은 모두 토큰이고, 다크는 `prefers-color-scheme`과 claude.ai 뷰어의 `data-theme` 둘 다 따른다.
 - 빌드 누락 방지(보류 중): push마다 검증기를 돌리고 다시 빌드한 `quiz.html`이 커밋된 것과
   같은지 확인하는 GitHub Actions 워크플로를 로컬 `ci-check` 브랜치에 만들어 두었다. 이 개발
   환경에 저장된 GitHub 토큰에 `workflow` 권한이 없어 push가 거부되었다(2026-10-27). 토큰에

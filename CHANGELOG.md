@@ -329,3 +329,26 @@ Claude가 제안한 "한 단계씩 넘기기"를 골랐다.
 - [x] 순번("흐름 1/2", "절차 요약")은 작은 파란 머리말로, 흐름 제목은 17px 굵은 제목으로 나눴다. 이전에는 둘 다
   작은 회색 라벨(`order-label`) 한 줄이었다.
 - [x] 확인: headless chromium 390px로 제목 17px, 가로 넘침 없음을 확인했다.
+
+## 2026-11-16 (5) — 주관식 모드(Claude 채점)와 claude.ai 게시
+
+사용자 요청: Claude가 로그인된 곳에서 열면 주관식 퀴즈를 내고 채점할 수 있나. API 키가 따로 필요 없다면 진행.
+claude.ai에 게시한 페이지의 `sample` 기능은 보는 사람의 claude.ai 계정으로 Claude를 호출하므로 API 키가 필요 없다.
+
+- [x] **주관식 대상.** mcq(보기를 숨김)·order·steps 116문제. 보기 목록 없이는 답이 정해지지 않는 mcq는
+  `validator.py`의 `OPEN_EXCLUDED`에 등록한다(지금은 sip-0001 하나). 패턴으로 찾은 후보 6개 중 5개(sip-0007,
+  sip-0015, sip-0077, diam-0023, ims-0008)는 주관식으로도 답이 정해져서 남겼다. 빌드가 `openable`을 넣는다.
+- [x] **화면.** Claude에 연결될 때만 시작 화면에 '답 방식' 줄이 나타난다. 주관식이면 입력칸과 [채점 받기]가
+  나오고, 결과로 정답·일부 정답·오답, Claude 피드백, 기준 정답, 해설을 보여준다. 채점 중 [채점 취소], PASS·다음
+  문제로 넘어가면 채점 취소. 오류(허용 거절, 사용량 한도, 로그인 만료, 결과 해석 실패)마다 안내 문구를 둔다.
+- [x] **채점 지침.** 기준 정답과 해설만 근거로 판단하고 표현 차이는 무시하라고 지시한다. 흐름 문제는 순서와
+  보내는 쪽·받는 쪽을 본다. JSON `{verdict, feedback}`으로 받는다(`sample.json`, 기본 모델·effort low).
+- [x] **claude.ai 게시.** `build.py`가 뼈대 없는 게시용 사본 `claude-quiz.html`(git 제외)도 만든다.
+  https://claude.ai/artifact/Mjd45SQDymyC1wLYZS22Xg 에 비공개로 게시했다(capabilities `{sample: {}}`).
+- [x] **테마.** 다크 색을 `:root:not([data-theme="light"])`·`:root[data-theme="dark"]` 구조로 바꿔 claude.ai
+  뷰어의 테마 선택을 따른다. 주 버튼 글자색을 토큰(`--on-accent`)으로 바꿨다. `[hidden]`이 클래스의 display보다
+  우선하도록 전역 규칙을 넣었다(채점 후 [채점 취소]가 남던 문제).
+- [x] 확인: headless chromium에서 `window.claude`가 없으면 답 방식 줄이 숨는 것, 가짜 `sample`을 넣으면 줄이 나타나고
+  주관식 116문제·순서 나열 21문제로 걸러지는 것, 채점 프롬프트에 기준 정답·학습자 답·흐름 규칙이 들어가는 것,
+  일부 정답 표시, 채점 중 PASS 시 결과가 덮어쓰지 않는 것, rate_limited 안내와 버튼 재활성화를 확인했다.
+  실제 Claude 채점은 이 환경에서 호출할 수 없어 확인하지 못했다.

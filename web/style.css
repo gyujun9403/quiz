@@ -1,5 +1,7 @@
+  /* 색은 모두 토큰. 라이트가 기본, 다크는 OS 설정(prefers-color-scheme)이나 claude.ai 뷰어의
+     테마 선택(data-theme)을 따른다. 뷰어에서 라이트를 고르면 OS가 다크여도 라이트로 보인다. */
   :root {
-    color-scheme: light dark;
+    color-scheme: light;
     --bg: #f5f5f7;
     --fg: #1c1c1e;
     --card: #ffffff;
@@ -11,9 +13,10 @@
     --good-fg: #157a3d;
     --bad-bg: #fdeaea;
     --bad-fg: #b3221a;
+    --on-accent: #ffffff;
   }
   @media (prefers-color-scheme: dark) {
-    :root {
+    :root:not([data-theme="light"]) {
       --bg: #121214;
       --fg: #f2f2f4;
       --card: #1e1e21;
@@ -25,9 +28,28 @@
       --good-fg: #6fdb92;
       --bad-bg: #3a1414;
       --bad-fg: #ff8f87;
+      --on-accent: #0b1a2b;
+      color-scheme: dark;
     }
   }
+  :root[data-theme="dark"] {
+    --bg: #121214;
+    --fg: #f2f2f4;
+    --card: #1e1e21;
+    --border: #3a3a3d;
+    --muted: #9a9a9e;
+    --accent: #4da3ff;
+    --accent-bg: #142943;
+    --good-bg: #123a20;
+    --good-fg: #6fdb92;
+    --bad-bg: #3a1414;
+    --bad-fg: #ff8f87;
+    --on-accent: #0b1a2b;
+    color-scheme: dark;
+  }
   * { box-sizing: border-box; }
+  /* hidden 속성은 클래스의 display 지정보다 우선한다(claude.ai 게시 뼈대와 같은 규칙) */
+  [hidden] { display: none !important; }
   body {
     margin: 0;
     min-height: 100vh;
@@ -180,7 +202,7 @@
     border-radius: 10px;
     border: none;
     background: var(--accent);
-    color: #fff;
+    color: var(--on-accent);
     cursor: pointer;
   }
   .primary:disabled { opacity: 0.4; }
@@ -203,6 +225,28 @@
   .feedback .verdict.correct { color: var(--good-fg); }
   .feedback .verdict.wrong { color: var(--bad-fg); }
   .feedback .verdict.pass { color: var(--muted); }
+  .feedback .verdict.partial { color: var(--accent); }
+  /* 주관식(Claude 채점) */
+  .open-input {
+    width: 100%;
+    font: inherit;
+    font-size: 16px;
+    line-height: 1.5;
+    padding: 10px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--card);
+    color: var(--fg);
+    resize: vertical;
+    margin-bottom: 8px;
+  }
+  .open-status { font-size: 13px; color: var(--muted); min-height: 18px; margin-bottom: 8px; }
+  .open-cancel { display: block; margin: 10px auto 0; }
+  .grade-box { padding: 10px 12px; border-radius: 10px; margin-bottom: 12px; line-height: 1.55; }
+  .grade-box.correct { background: var(--good-bg); }
+  .grade-box.partial { background: var(--accent-bg); }
+  .grade-box.wrong { background: var(--bad-bg); }
+  .grade-head { font-weight: 700; margin-bottom: 4px; }
   .term-link { border-bottom: 1px dotted var(--accent); cursor: pointer; }
   .term-pop {
     position: fixed;

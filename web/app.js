@@ -910,11 +910,13 @@
   function cardNode(pg, card) {
     var box = el("div", { cls: "concept-card" });
     if (card.kind === "summary") {
-      box.appendChild(el("div", { cls: "order-label", text: "절차 요약" }));
+      box.appendChild(el("div", { cls: "card-kicker", text: "절차 요약" }));
       box.appendChild(proseNode(pg.summary, "concept-summary", true));
       return box;
     }
-    box.appendChild(el("div", { cls: "order-label", text: "흐름 " + card.n + "/" + card.of + " · " + card.fl.title }));
+    // 흐름 제목은 카드의 제목이라 크게, 순번(흐름 1/2)은 그 위에 작게 보여준다.
+    box.appendChild(el("div", { cls: "card-kicker", text: "흐름 " + card.n + "/" + card.of }));
+    box.appendChild(el("h3", { cls: "card-heading", text: card.fl.title }));
     var fr = flowActorsRows(qById[card.fl.id]);
     box.appendChild(renderDiagram(fr.actors, fr.rows, function (idx) {
       cState.hl = idx;

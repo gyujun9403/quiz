@@ -336,6 +336,8 @@
   .concept-tabs .pick-btn { font-size: 13px; padding: 6px 10px; }
   .concept-title { font-size: 18px; margin: 14px 0 10px; }
   .concept-card { min-height: 200px; }
+  .card-kicker { font-size: 13px; font-weight: 600; color: var(--accent); margin-bottom: 2px; }
+  .card-heading { font-size: 17px; font-weight: 700; line-height: 1.4; margin: 0 0 10px; }
   .concept-hint { font-size: 12px; color: var(--muted); text-align: center; margin-top: -4px; }
   .concept-nav { display: flex; align-items: center; gap: 8px; margin: 14px 0 10px; }
   .concept-nav .secondary { flex: 1; color: var(--accent); border-color: var(--accent); }
@@ -1420,11 +1422,13 @@
   function cardNode(pg, card) {
     var box = el("div", { cls: "concept-card" });
     if (card.kind === "summary") {
-      box.appendChild(el("div", { cls: "order-label", text: "절차 요약" }));
+      box.appendChild(el("div", { cls: "card-kicker", text: "절차 요약" }));
       box.appendChild(proseNode(pg.summary, "concept-summary", true));
       return box;
     }
-    box.appendChild(el("div", { cls: "order-label", text: "흐름 " + card.n + "/" + card.of + " · " + card.fl.title }));
+    // 흐름 제목은 카드의 제목이라 크게, 순번(흐름 1/2)은 그 위에 작게 보여준다.
+    box.appendChild(el("div", { cls: "card-kicker", text: "흐름 " + card.n + "/" + card.of }));
+    box.appendChild(el("h3", { cls: "card-heading", text: card.fl.title }));
     var fr = flowActorsRows(qById[card.fl.id]);
     box.appendChild(renderDiagram(fr.actors, fr.rows, function (idx) {
       cState.hl = idx;

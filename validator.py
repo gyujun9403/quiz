@@ -21,6 +21,8 @@ ALLOWED_TAGS = {
     "avp", "command-code", "result-code", "transport", "concept",
 }
 ALLOWED_DIFFICULTY = {"basic", "advanced"}
+# 중요도: 3=★★★ 필수(매일 보는 것), 2=★★ 중요(운영·장애 분석에 자주), 1=★ 참고(드문 예외·번호 암기)
+ALLOWED_IMPORTANCE = {1, 2, 3}
 VALID_TYPES = {"mcq", "ox", "short", "order", "steps", "match"}
 MATCH_MIN_PAIRS, MATCH_MAX_PAIRS = 2, 6
 ID_RE = re.compile(r"^([a-z]+)-(\d{4})$")
@@ -96,6 +98,13 @@ def validate(questions):
                     f"[{loc}] id 접두어 '{m.group(1)}'가 topic '{topic}'과 불일치 "
                     f"(기대: {expected_prefix}-)"
                 )
+
+        importance = q.get("importance")
+        if isinstance(importance, bool) or importance not in ALLOWED_IMPORTANCE:
+            errors.append(
+                f"[{loc}] importance 허용되지 않음: {importance!r} "
+                f"(허용: 3=★★★ 필수, 2=★★ 중요, 1=★ 참고, 필수 필드)"
+            )
 
         difficulty = q.get("difficulty")
         if difficulty not in ALLOWED_DIFFICULTY:

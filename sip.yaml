@@ -2,6 +2,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [method]
   question: "RFC 3261이 정의하는 6개 기본 메서드에 포함되지 않는 것은?"
   choices: ["REGISTER", "SUBSCRIBE", "CANCEL", "OPTIONS"]
@@ -16,6 +17,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "성공적인 SIP 세션 설정 흐름을 순서대로 맞춰라."
   direction: false
@@ -38,6 +40,7 @@
   type: order
   topic: SIP
   difficulty: advanced
+  importance: 3
   tags: [message-flow, method]
   question: "발신자가 응답 대기 중 통화를 취소(CANCEL)하는 흐름을 순서대로 맞춰라."
   direction: false
@@ -65,6 +68,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [method]
   question: "CANCEL은 INVITE 요청에 대해서만 사용해야 한다."
   answer: true
@@ -78,6 +82,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [method]
   question: "이미 최종 응답을 받은 요청에 CANCEL을 보내면 그 요청의 처리에 영향을 준다."
   answer: false
@@ -91,6 +96,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [method]
   question: "SIP에서 진행 중인 세션(통화)을 종료할 때 사용하는 메서드는?"
   answer: ["BYE"]
@@ -104,6 +110,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code, concept]
   question: "1xx(잠정 응답) 클래스의 성격을 가장 정확히 설명한 것은?"
   choices:
@@ -121,6 +128,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code]
   question: "1xx 응답은 클라이언트의 ACK 전송을 유발하지 않는다."
   answer: true
@@ -133,6 +141,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [response-code]
   question: "486 Busy Here 대신 600 Busy Everywhere를 써야 하는 경우는?"
   choices:
@@ -150,6 +159,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [response-code]
   question: "Request-URI에 다이얼 문자열이 아직 다 입력되지 않아 불완전할 때 쓰는 응답은?"
   choices: ["404 Not Found", "484 Address Incomplete", "485 Ambiguous", "400 Bad Request"]
@@ -163,6 +173,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [response-code]
   question: "485 Ambiguous와 300 Multiple Choices는 의미(semantics)가 달라서 별도의
     코드로 분리되어 있다."
@@ -177,6 +188,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "프록시 서버가(사용자가 아니라) 클라이언트 인증을 요구할 때 쓰는 응답 코드는?"
   answer: ["407"]
@@ -189,6 +201,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code]
   question: "483 Too Many Hops가 발생하는 조건은?"
   choices:
@@ -207,6 +220,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [response-code]
   question: "482 Loop Detected와 483 Too Many Hops는 둘 다 Max-Forwards 값이 0이 되는
     같은 조건에서 발생한다."
@@ -220,6 +234,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "상대방이 이미 다른 통화를 처리 중이라 이 통화에 응답할 수 없을 때 가장
     적합한 코드는?"
@@ -234,6 +249,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code]
   question: "SIP 응답 코드 486의 영문 명칭은?"
   answer: ["Busy Here"]
@@ -246,6 +262,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "487 Request Terminated이 발생하는 원인은?"
   choices:
@@ -263,6 +280,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code]
   question: "CANCEL 요청 자체에 대한 응답으로 487 Request Terminated이 올 수 있다."
   answer: false
@@ -276,6 +294,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [response-code]
   question: "301 Moved Permanently를 받으면 클라이언트는 로컬 주소록을 새 주소로
     갱신하는 것이 권장된다."
@@ -290,6 +309,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [response-code]
   question: "302 Moved Temporarily 응답에 만료 시간이 없으면, 그 Contact 주소는
     이후에도 계속 캐시해서 재사용해도 된다."
@@ -303,6 +323,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code]
   question: "503 Service Unavailable을 Retry-After 헤더 없이 받았을 때 클라이언트는
     어떻게 동작해야 하는가?"
@@ -322,6 +343,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code]
   question: "서버가 요청 메서드 자체를 전혀 지원하지 않아(어떤 사용자에 대해서도)
     처리할 수 없을 때 쓰는 코드는?"
@@ -337,6 +359,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code]
   question: "서버가 요청 메서드를 인식은 하지만, 그 Request-URI가 가리키는 주소에서는
     허용하지 않을 때 쓰는 코드는?"
@@ -352,6 +375,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code]
   question: "504 Server Time-out은 서버가 접근한 외부(다운스트림) 서버로부터 제때
     응답을 받지 못했을 때 쓰고, 408 Request Timeout은 서버 자신이 제 시간에
@@ -367,6 +391,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 1
   tags: [response-code, concept]
   question: "SIP이 HTTP/1.1 응답 코드 체계를 확장하면서 새로 정의한 클래스는?"
   choices: ["1xx", "3xx", "5xx", "6xx"]
@@ -380,6 +405,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code, concept]
   question: "3xx 응답은 4xx/5xx/6xx와 마찬가지로 확정적 실패(definite failure)로
     분류된다."
@@ -394,6 +420,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [message-flow, method]
   question: "단말이 등록 서버에 처음 등록할 때, 인증 챌린지를 포함한 흐름을 순서대로 맞춰라."
   direction: false
@@ -417,6 +444,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [method]
   question: "단말이 자신의 현재 접속 위치를 등록 서버에 등록(위치 바인딩)할 때 쓰는 메서드는?"
   answer: ["REGISTER"]
@@ -430,6 +458,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [method]
   question: "REGISTER는 사용자의 공개 주소(AOR)를 현재 접속 위치(Contact)에 바인딩해 등록
     서버가 그 사용자의 위치를 알게 하는 메서드다."
@@ -444,6 +473,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "착신자가 통화를 끊는 경우까지 포함한 기본 호의 전체 흐름(설정→종료)을 순서·방향까지 맞춰라."
   items:
@@ -468,6 +498,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [method, message-flow]
   question: "INVITE에 대한 200 OK(2xx 최종 응답)를 받은 발신자가 3-way 핸드셰이크를 완성하려고
     마지막으로 보내는 메시지는?"
@@ -483,6 +514,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [method]
   question: "아직 응답이 오지 않아 확립되지 않은(진행 중인 INVITE) 통화를 중단할 때는 BYE를 보낸다."
   answer: false
@@ -496,6 +528,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "착신 단말이 INVITE를 받아 사용자에게 착신을 알리는(전화가 울리는) 중임을 나타내는 응답은?"
   choices: ["180 Ringing", "100 Trying", "183 Session Progress", "200 OK"]
@@ -510,6 +543,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code]
   question: "180 Ringing 응답을 받았다면 착신자가 전화를 받아 통화가 연결된 것이다."
   answer: false
@@ -523,6 +557,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "100 Trying 응답의 의미로 가장 정확한 것은?"
   choices:
@@ -541,6 +576,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code]
   question: "183 Session Progress가 쓰이는 대표적 상황은?"
   choices:
@@ -559,6 +595,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "요청이 성공했음을 나타내는 SIP 2xx 최종 응답 코드의 번호(3자리)는?"
   answer: ["200"]
@@ -572,6 +609,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "서버가 Request-URI의 도메인에 해당 사용자가 존재하지 않는다는 확정 정보를 가졌을 때 보내는 응답은?"
   choices: ["404 Not Found", "403 Forbidden", "480 Temporarily Unavailable", "400 Bad Request"]
@@ -586,6 +624,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code]
   question: "404 Not Found는 요청 메시지의 문법 자체가 잘못됐다는 뜻이다."
   answer: false
@@ -599,6 +638,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code]
   question: "서버가 요청을 이해했지만 수행을 거부하며, 인증을 다시 시도해도 소용없어 재시도하면 안 되는 응답은?"
   choices: ["403 Forbidden", "401 Unauthorized", "407 Proxy Authentication Required", "404 Not Found"]
@@ -613,6 +653,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [response-code]
   question: "401 Unauthorized는 자격증명을 갖춰 다시 시도하면 통과할 수 있지만, 403 Forbidden은
     인증을 다시 시도해도 거부된다."
@@ -627,6 +668,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [message-flow, method]
   question: "이미 등록된 단말이 모든 위치 등록을 해제(로그아웃)하는 흐름을 순서대로 맞춰라."
   direction: false
@@ -648,6 +690,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [message-flow, method]
   question: "통화 중이던 발신자가 전화를 끊어 세션을 종료하는 흐름을 순서대로 맞춰라."
   direction: false
@@ -669,6 +712,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [message-flow, response-code]
   question: "발신자가 전화를 걸었으나 착신자가 통화 중이라 연결되지 못하는 흐름을 순서대로 맞춰라."
   direction: false
@@ -691,6 +735,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [message-flow, response-code]
   question: "발신자가 전화를 걸었으나 착신자가 지금 응대할 수 없어(부재/방해금지 등) 연결되지 못하는 흐름을 순서대로 맞춰라."
   direction: false
@@ -712,6 +757,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [header]
   question: "요청이 거쳐온 경로를 기록해 응답이 되돌아갈 길을 알려주고, branch 값으로 트랜잭션
     식별과 루프 감지에 쓰이는 헤더는?"
@@ -726,6 +772,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header]
   question: "RFC 3261에서 Via의 branch 값이 트랜잭션 식별자로 쓰이려면 반드시 이 문자열로
     시작해야 한다. 그 매직 쿠키는?"
@@ -739,6 +786,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [header, concept]
   question: "두 UA 사이의 지속적 관계인 '다이얼로그(dialog)'를 유일하게 식별하는 3요소는?"
   choices:
@@ -756,6 +804,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [header]
   question: "CSeq 헤더가 담는 두 가지 정보는?"
   choices:
@@ -773,6 +822,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [header]
   question: "INVITE/200 OK에 담겨, 이후 후속 요청(re-INVITE·BYE 등)을 상대에게 직접 보낼
     주소를 알려주는 헤더는?"
@@ -788,6 +838,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 1
   tags: [header]
   question: "SIP UAC가 요청을 만들 때 Max-Forwards의 권장 초기값(정수)은?"
   answer: ["70"]
@@ -800,6 +851,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [header]
   question: "프록시가 다이얼로그의 이후 요청들도 반드시 자신을 거치게 하려고 초기 요청/응답에
     자신의 URI를 추가하는 헤더는?"
@@ -815,6 +867,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header, concept]
   question: "Via의 branch는 트랜잭션을 식별하고, Call-ID와 양쪽 태그(From/To 태그)는
     다이얼로그를 식별한다."
@@ -828,6 +881,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [concept, method]
   question: "REGISTER 요청을 받아 사용자의 AOR↔현재 위치 바인딩을 위치 서비스(location
     service)에 저장하는 SIP 엔티티는?"
@@ -842,6 +896,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [concept, response-code]
   question: "요청을 대신 전달하지 않고, 클라이언트에게 '다른 주소로 다시 보내라'며 3xx로 새
     위치를 알려주는 엔티티는?"
@@ -856,6 +911,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [method]
   question: "OPTIONS 메서드의 주 용도는?"
   choices:
@@ -873,6 +929,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header, concept]
   question: "요청을 실제로 어디로 보낼지는 To 헤더가 아니라 Request-URI가 결정한다."
   answer: true
@@ -885,6 +942,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header]
   question: "CSeq 순서 번호는 한 다이얼로그 안에서 모든 요청에 걸쳐 동일한 값으로 유지된다."
   answer: false
@@ -897,6 +955,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header]
   question: "Contact 헤더는 REGISTER에서만 쓰이고 INVITE나 200 OK에는 쓰이지 않는다."
   answer: false
@@ -909,6 +968,7 @@
   type: match
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [response-code]
   question: "호가 연결되지 못하고 끝날 때 자주 보는 응답 코드와 그 의미를 짝지어라."
   pairs:
@@ -927,6 +987,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code]
   question: "100 Trying은 180 Ringing 같은 다른 잠정 응답과 달리, stateful 프록시가 상류(발신 쪽)로 전달하지 않는다."
   answer: true
@@ -941,6 +1002,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [header]
   question: |
     다음 INVITE에서 이 요청이 만든 트랜잭션을 식별하는 값은?
@@ -967,6 +1029,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [header, concept]
   question: |
     다음 INVITE의 To 헤더에 tag가 없는 이유는?
@@ -1000,6 +1063,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [message-flow, header]
   question: "발신자의 INVITE를 첫 프록시가 인증 챌린지로 막은 뒤, 발신자가 자격증명을 넣어 다시 보내 통과하는 흐름을 순서대로 맞춰라."
   direction: false
@@ -1024,6 +1088,7 @@
   type: order
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [message-flow, method]
   question: "통화 중에 착신자 단말의 IP 주소가 바뀌어, 착신자가 같은 다이얼로그 안에서 세션을 수정하는 흐름을 순서·방향까지 맞춰라."
   items:
@@ -1046,6 +1111,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [method, concept]
   question: "RFC 3261에서 이미 확립된 세션의 미디어(주소·포트·코덱 등)를 바꿀 때 보내는 요청은?"
   choices:
@@ -1066,6 +1132,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [method]
   question: "re-INVITE는 처음 INVITE를 보낸 발신자만 보낼 수 있다."
   answer: false
@@ -1078,6 +1145,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [method, response-code]
   question: "re-INVITE로 코덱 변경을 제안했는데 상대가 488 Not Acceptable Here로 거절했다. 세션은 어떻게 되는가?"
   choices:
@@ -1097,6 +1165,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [response-code, message-flow]
   question: "같은 다이얼로그에서 양쪽 UA가 거의 동시에 re-INVITE를 보내 서로 엇갈렸다. 자기 INVITE가 진행 중인데 상대 INVITE를 받은 UA가 돌려주는 응답은?"
   choices: ["491 Request Pending", "500 Server Internal Error", "486 Busy Here", "482 Loop Detected"]
@@ -1114,6 +1183,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [method, concept]
   question: "re-INVITE는 프록시에서 포킹되지 않으므로 최종 응답을 하나만 받는다."
   answer: true
@@ -1129,6 +1199,7 @@
   type: match
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header]
   question: "SIP 인증에 쓰는 헤더와 그 역할을 짝지어라."
   pairs:
@@ -1147,6 +1218,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [header, message-flow]
   question: "첫 INVITE의 CSeq가 '1 INVITE'였고 407을 받았다. 자격증명을 넣어 다시 보내는 INVITE의 CSeq는?"
   choices: ["2 INVITE", "1 INVITE", "1 ACK", "2 ACK"]
@@ -1162,6 +1234,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [method, concept]
   question: "서버는 CANCEL 요청에 401이나 407로 인증 챌린지를 보낼 수 있다."
   answer: false
@@ -1176,6 +1249,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header, concept]
   question: "SIP Digest 인증에서 단말은 비밀번호를 그대로 보내지 않고, 비밀번호와 서버가 준 nonce 등으로 계산한 값(response)을 보낸다."
   answer: true
@@ -1190,6 +1264,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [header, concept]
   question: "Digest 챌린지에 stale=true가 들어 있다. 단말은 어떻게 하면 되는가?"
   choices:
@@ -1209,6 +1284,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [concept]
   question: "RFC 3261 기준으로 SIP Digest 인증이 제공하지 않는 것은?"
   choices:
@@ -1230,6 +1306,7 @@
   type: short
   topic: SIP
   difficulty: basic
+  importance: 3
   tags: [transport]
   question: "포트를 적지 않았을 때 SIP over UDP·TCP가 쓰는 기본 포트 번호는?"
   answer: ["5060"]
@@ -1242,6 +1319,7 @@
   type: ox
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [transport]
   question: "SIP over TLS도 UDP·TCP와 같은 기본 포트 5060을 쓴다."
   answer: false
@@ -1254,6 +1332,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [transport]
   question: "경로 MTU를 모르는 상태에서 1300바이트가 넘는 요청을 보내야 한다. UDP로 설정된 UAC는 어떻게 해야 하는가?"
   choices:
@@ -1274,6 +1353,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [transport, header]
   question: "서버가 받은 요청의 맨 위 Via sent-by 주소가 실제 패킷 출발지 IP와 다르다. 서버가 그 Via에 추가하는 파라미터는?"
   choices: ["received", "branch", "maddr", "ttl"]
@@ -1289,6 +1369,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [transport, header]
   question: "TCP 같은 스트림 전송에서는 Content-Length 헤더를 반드시 넣어야 한다."
   answer: true
@@ -1304,6 +1385,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [method, concept]
   question: "INVITE의 2xx에 대한 ACK가 486 같은 비-2xx 응답에 대한 ACK와 다른 점은?"
   choices:
@@ -1324,6 +1406,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [message-flow, transport]
   question: "INVITE에 대한 2xx 응답은 UAS가 ACK를 받을 때까지 재전송하며, TCP로 보냈더라도 마찬가지다."
   answer: true
@@ -1338,6 +1421,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [concept, response-code]
   question: "INVITE에 대해 To 태그가 붙은 180 Ringing이 왔다. 이 응답으로 생긴 다이얼로그는 어떤 상태인가?"
   choices:
@@ -1357,6 +1441,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [message-flow, concept]
   question: "프록시가 INVITE를 포킹해 두 단말이 모두 200 OK를 보냈다. UAC는 어떻게 처리하는가?"
   choices:
@@ -1376,6 +1461,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [message-flow, concept]
   question: "SDP 없이 INVITE를 보냈더니 착신자가 200 OK에 SDP(offer)를 담아 보냈다. 발신자의 answer는 어디에 담는가?"
   choices: ["ACK", "새 INVITE", "BYE", "PRACK"]
@@ -1391,6 +1477,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [message-flow, response-code]
   question: "INVITE를 보냈지만 Timer B가 만료될 때까지 아무 응답이 없다. UAC는 어떤 응답을 받은 것처럼 처리하는가?"
   choices: ["408 Request Timeout", "503 Service Unavailable", "480 Temporarily Unavailable", "504 Server Time-out"]
@@ -1406,6 +1493,7 @@
   type: short
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [transport, concept]
   question: "SIP 타이머의 기준값 T1(RTT 추정값)의 기본값은 몇 ms인가? (숫자만)"
   answer: ["500"]
@@ -1420,6 +1508,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [response-code, method]
   question: "UAS가 받은 BYE가 자신이 가진 어떤 다이얼로그와도 맞지 않는다. UAS가 보내는 응답은?"
   choices: ["481 Call/Transaction Does Not Exist", "480 Temporarily Unavailable", "487 Request Terminated", "408 Request Timeout"]
@@ -1434,6 +1523,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [method, concept]
   question: "stateful 프록시는 CANCEL을 받으면 하류의 응답을 기다리지 않고 직접 200 OK로 응답한다."
   answer: true
@@ -1447,6 +1537,7 @@
   type: ox
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [method, concept]
   question: "착신자는 200 OK를 보내기 전 early 다이얼로그 상태에서도 BYE를 보내 통화를 끊을 수 있다."
   answer: false
@@ -1463,6 +1554,7 @@
   type: mcq
   topic: SIP
   difficulty: basic
+  importance: 2
   tags: [header, concept]
   question: |
     다음 180 Ringing에서 처음 나타나, Call-ID·From 태그와 함께 다이얼로그를 식별하게 되는 값은?
@@ -1490,6 +1582,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 1
   tags: [header, method]
   question: |
     Alice가 200 OK를 받고 보낸 ACK다. 처음 INVITE의 branch는 z9hG4bKnashds8이었다. 이 ACK의 branch가 다른 이유는?
@@ -1519,6 +1612,7 @@
   type: mcq
   topic: SIP
   difficulty: advanced
+  importance: 2
   tags: [header, concept]
   question: |
     통화를 마치고 Bob이 보낸 BYE다. Alice의 INVITE는 'CSeq: 314159 INVITE'였다. 이 BYE의 CSeq가 231인 이유는?

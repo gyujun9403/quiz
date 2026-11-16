@@ -10,6 +10,7 @@
   type: steps
   topic: IMS
   difficulty: basic
+  importance: 3
   tags: [message-flow, concept]
   question: "단말이 IMS에 처음 등록될 때(핸드폰이 IMS에 올라올 때)의 전체 절차를, 각 단계의
     대상(누가→누구)과 동작을 골라 순서대로 완성하라."
@@ -49,6 +50,7 @@
   type: steps
   topic: IMS
   difficulty: basic
+  importance: 3
   tags: [message-flow, concept]
   question: "다른 사람이 이 IMS 가입자에게 전화를 걸었을 때(착신, terminating)의 전체 절차를,
     각 단계의 대상과 동작을 골라 순서대로 완성하라."
@@ -80,6 +82,7 @@
   type: steps
   topic: IMS
   difficulty: advanced
+  importance: 2
   tags: [message-flow, concept]
   question: "등록을 마친 IMS 가입자가 전화를 걸 때(발신, originating)의 전체 절차를, 각 단계의
     대상과 동작을 골라 순서대로 완성하라."
@@ -111,6 +114,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 3
   tags: [concept]
   question: "단말의 첫 SIP 접점(Gm 인터페이스)이며, 로밍 시 방문망에 위치하고 미디어 정책을
     위해 PCRF와 Rx로 연동하는 IMS 노드는?"
@@ -125,6 +129,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 3
   tags: [concept]
   question: "홈망의 진입점(entry point)으로, HSS에 Cx로 조회해 사용자를 담당할 S-CSCF를 찾아
     라우팅하고 토폴로지 은닉을 할 수 있는 노드는?"
@@ -139,6 +144,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 3
   tags: [concept]
   question: "등록 시 레지스트라 역할을 하고, 세션 제어와 iFC 기반 서비스 트리거·사용자 프로필
     보유를 담당하며 항상 홈망에 상주하는 노드는?"
@@ -153,6 +159,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 3
   tags: [concept]
   question: "가입자 마스터 DB로서 가입 정보·인증 데이터(인증 벡터)·서비스 프로필·S-CSCF 할당
     정보를 보관하는 노드는?"
@@ -167,6 +174,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "S-CSCF가 iFC 판정에 따라 세션을 넘겨 실제 서비스 로직(착신전환·통화녹음 등)을
     실행하는 노드와, 그 사이 인터페이스가 옳게 짝지어진 것은?"
@@ -185,6 +193,7 @@
   type: ox
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "S-CSCF는 항상 사용자의 홈망에 위치하며, I-CSCF는 주로 등록과 착신 라우팅 시 HSS
     조회를 위해 관여한다."
@@ -198,6 +207,7 @@
   type: ox
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "P-CSCF가 그 사용자를 담당할 S-CSCF를 직접 선택한다."
   answer: false
@@ -210,6 +220,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "IMS 등록·인증에 쓰이고 ISIM에 저장되며 통화 상대에게 노출되지 않는, NAI
     (user@realm) 형식의 사설 식별자는?"
@@ -224,6 +235,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "다른 사용자가 이 사용자에게 도달할 때 쓰는 sip:/tel: URI 형식의 공개 식별자
     (한 가입에 여러 개 가능)는?"
@@ -238,6 +250,7 @@
   type: ox
   topic: IMS
   difficulty: basic
+  importance: 1
   tags: [concept]
   question: "IMPU(공개 식별자)는 한 가입자당 정확히 하나만 존재한다."
   answer: false
@@ -250,6 +263,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "UE와 P-CSCF 사이의 SIP 레퍼런스 포인트(단말-망 접점) 이름은?"
   choices: ["Gm", "Mw", "Cx", "ISC"]
@@ -263,6 +277,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "S-CSCF와 Application Server(AS) 사이의 레퍼런스 포인트는?"
   choices: ["ISC", "Cx", "Sh", "Rx"]
@@ -276,6 +291,7 @@
   type: mcq
   topic: IMS
   difficulty: basic
+  importance: 2
   tags: [concept, command-code]
   question: "UAR/MAR/SAR/LIR(등록·인증·서버할당·착신조회)가 오가는, CSCF와 HSS 사이의
     레퍼런스 포인트는?"
@@ -290,6 +306,7 @@
   type: ox
   topic: IMS
   difficulty: basic
+  importance: 1
   tags: [concept]
   question: "P-CSCF·I-CSCF·S-CSCF 등 CSCF들 사이의 SIP 구간은 Mw 레퍼런스 포인트다."
   answer: true
@@ -307,6 +324,7 @@
   type: steps
   topic: IMS
   difficulty: advanced
+  importance: 3
   tags: [message-flow, concept]
   question: "핸드폰을 켜서 LTE 망에 처음 접속(EPC Attach)할 때의 전체 절차를, 각 단계의 대상(누가→누구)과 동작을 골라 순서대로 완성하라."
   actors: ["UE", "MME", "HSS", "S-GW"]

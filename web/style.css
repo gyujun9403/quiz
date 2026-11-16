@@ -311,6 +311,18 @@
   }
   .pick-count { font-size: 13px; color: var(--muted); margin: 4px 0 16px; }
   .concept-btn { margin-bottom: 10px; color: var(--accent); border-color: var(--accent); }
+  /* 문제 목록(중요도순) */
+  .qgroup-head { font-weight: 700; font-size: 15px; margin: 18px 0 6px; padding-bottom: 4px; border-bottom: 2px solid var(--accent); }
+  .qitem { padding: 10px 0; border-bottom: 1px solid var(--border); cursor: pointer; }
+  .qitem-meta { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .qitem-stars { color: var(--accent); letter-spacing: 1px; }
+  .qitem-q { font-size: 15px; line-height: 1.55; white-space: pre-wrap; }
+  .qitem-q.raw { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 12px; overflow-x: auto; }
+  .qitem-more { font-size: 13px; color: var(--accent); margin-top: 4px; }
+  .qitem-detail { margin-top: 8px; padding: 10px 2px; border-top: 1px dashed var(--border); } /* 그림 폭을 줄이지 않게 좌우 여백 최소 */
+  .qitem-detail .explain { white-space: pre-wrap; line-height: 1.55; font-size: 14px; margin: 8px 0; }
+  .qitem-detail .ref { font-size: 12px; color: var(--muted); margin: 0; }
+  #qlist .primary { margin-top: 16px; }
   .concept-tabs { margin: 12px 0 4px; }
   .concept-tabs .pick-btn { font-size: 13px; padding: 6px 10px; }
   .concept-title { font-size: 18px; margin: 14px 0 10px; }

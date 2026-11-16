@@ -15,9 +15,13 @@
   var current = null;
   var answered = false;
   var DIFF_LABEL = { basic: "기본", advanced: "심화" };
+  // 중요도: 3=★★★ 필수, 2=★★ 중요, 1=★ 참고. 선택 줄은 "이 등급 이상"으로 거른다.
+  var IMP_STARS = { 3: "★★★", 2: "★★", 1: "★" };
+  var IMP_NAME = { 3: "필수", 2: "중요", 1: "참고" };
+  var IMP_LABEL = { "3": "★★★ 필수만", "2": "★★ 이상" };
   var TYPE_LABEL = { mcq: "객관식", ox: "O/X", short: "단답", order: "순서 나열", steps: "단계 완성", match: "짝맞추기" };
   var MODE_LABEL = { "__all__": "전체", quick: "짧은 문제", order: "순서 나열", steps: "단계 완성" };
-  var sel = { set: "__all__", topic: "__all__", difficulty: "__all__", mode: "__all__" };
+  var sel = { set: "__all__", topic: "__all__", difficulty: "__all__", importance: "__all__", mode: "__all__" };
 
   var elHdr = document.getElementById("hdr");
   var elDeckChange = document.getElementById("deck-change");
@@ -29,6 +33,7 @@
   var elModeGroup = document.getElementById("mode-group");
   var elPickTopic = document.getElementById("pick-topic");
   var elPickDiff = document.getElementById("pick-diff");
+  var elPickImp = document.getElementById("pick-imp");
   var elPickMode = document.getElementById("pick-mode");
   var elPickCount = document.getElementById("pick-count");
   var elStartBtn = document.getElementById("start-btn");
@@ -681,6 +686,7 @@
       return (!inSet || inSet.indexOf(q.id) !== -1) &&
              (sel.topic === "__all__" || q.topic === sel.topic) &&
              (sel.difficulty === "__all__" || q.difficulty === sel.difficulty) &&
+             (sel.importance === "__all__" || q.importance >= Number(sel.importance)) &&
              (sel.mode === "__all__" || modeOf(q) === sel.mode);
     });
   }
@@ -700,6 +706,7 @@
     makeRow(elPickSet, "set", SETS.map(function (s) { return s.id; }), function (id) { return setById[id].name; });
     makeRow(elPickTopic, "topic", topicVals, function (t) { return t; });
     makeRow(elPickDiff, "difficulty", diffVals, function (d) { return DIFF_LABEL[d] || d; });
+    makeRow(elPickImp, "importance", ["3", "2"], function (v) { return IMP_LABEL[v]; });
     makeRow(elPickMode, "mode", modeVals, function (m) { return MODE_LABEL[m]; });
     var n = matching().length;
     elPickCount.textContent = n + "문제";
@@ -711,6 +718,7 @@
     var parts = sel.set === "__all__" ? [] : [setById[sel.set].name];
     parts.push(sel.topic === "__all__" ? "전체" : sel.topic);
     parts.push(sel.difficulty === "__all__" ? "전체" : DIFF_LABEL[sel.difficulty]);
+    if (sel.importance !== "__all__") parts.push(IMP_LABEL[sel.importance]);
     if (sel.mode !== "__all__") parts.push(MODE_LABEL[sel.mode]);
     return parts.join(" · ") + " ▾";
   }
@@ -1089,11 +1097,64 @@
   function showStart() {
     closeSheet();
     elConcept.hidden = true;
+    elQList.hidden = true;
     elQuiz.hidden = true;
     elHdr.hidden = true;
     elFeedback.hidden = true;
     elStart.hidden = false;
     refreshPicker();
+  }
+
+  // ---- 문제 목록 (중요도순) ----
+  // 퀴즈가 아니라 훑어보기용. 지금 고른 조건의 문제를 중요도 높은 순으로 나열하고,
+  // 문제를 탭하면 그 자리에서 정답·해설·근거를 펼친다(정답 그림은 펼칠 때 만든다).
+  var elQList = document.getElementById("qlist");
+  var elQListBody = document.getElementById("qlist-body");
+
+  function listItem(q) {
+    var item = el("div", { cls: "qitem" });
+    var head = el("div", { cls: "qitem-meta" });
+    head.appendChild(el("span", { cls: "qitem-stars", text: IMP_STARS[q.importance] }));
+    head.appendChild(el("span", { text: " " + q.topic + " · " + (TYPE_LABEL[q.type] || q.type) + " · " + q.id }));
+    item.appendChild(head);
+    item.appendChild(el("div", { cls: "qitem-q" + (looksRaw(q.question) ? " raw" : ""), text: q.question }));
+    var more = el("div", { cls: "qitem-more", text: "▸ 정답·해설 보기" });
+    item.appendChild(more);
+    var detail = null;
+    item.addEventListener("click", function (ev) {
+      if (detail && detail.contains(ev.target)) return; // 펼친 내용 안을 탭하면 접지 않는다
+      if (detail) {
+        detail.remove();
+        detail = null;
+        more.textContent = "▸ 정답·해설 보기";
+        return;
+      }
+      detail = el("div", { cls: "qitem-detail" });
+      detail.appendChild(answerNode(q));
+      detail.appendChild(el("p", { cls: "explain", text: q.explain }));
+      detail.appendChild(el("p", { cls: "ref", text: "ref: " + q.ref }));
+      item.appendChild(detail);
+      more.textContent = "▾ 접기";
+    });
+    return item;
+  }
+
+  function showList() {
+    var qs = matching().slice().sort(function (a, b) {
+      return b.importance - a.importance || (a.id < b.id ? -1 : 1);
+    });
+    elQListBody.innerHTML = "";
+    elQListBody.appendChild(el("h2", { cls: "concept-title", text: "문제 목록 · " + filterLabel().replace(" ▾", "") }));
+    elQListBody.appendChild(el("div", { cls: "order-label", text: qs.length + "문제 · 중요도순 · 문제를 탭하면 정답과 해설" }));
+    [3, 2, 1].forEach(function (lv) {
+      var group = qs.filter(function (q) { return q.importance === lv; });
+      if (!group.length) return;
+      elQListBody.appendChild(el("div", { cls: "qgroup-head", text: IMP_STARS[lv] + " " + IMP_NAME[lv] + " (" + group.length + ")" }));
+      group.forEach(function (q) { elQListBody.appendChild(listItem(q)); });
+    });
+    elStart.hidden = true;
+    elQList.hidden = false;
+    window.scrollTo(0, 0);
   }
 
   function startQuiz() {
@@ -1103,6 +1164,7 @@
     elStart.hidden = true;
     closeSheet();
     elConcept.hidden = true;
+    elQList.hidden = true;
     elQuiz.hidden = false;
     elHdr.hidden = false;
     elDeckChange.textContent = filterLabel();
@@ -1111,6 +1173,9 @@
 
   elStartBtn.addEventListener("click", startQuiz);
   elConceptBtn.addEventListener("click", showConcept);
+  document.getElementById("list-btn").addEventListener("click", showList);
+  document.getElementById("qlist-back").addEventListener("click", showStart);
+  document.getElementById("qlist-start").addEventListener("click", startQuiz);
   elConceptBack.addEventListener("click", showStart);
   elConceptStart.addEventListener("click", startQuiz);
   elDeckChange.addEventListener("click", showStart);

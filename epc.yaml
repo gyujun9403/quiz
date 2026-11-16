@@ -9,6 +9,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [concept]
   question: "C-SGN(CIoT Serving Gateway Node)이 한 장비 안에 합쳐 구현하는 EPC 기능은?"
   choices:
@@ -28,6 +29,7 @@
   type: ox
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "EMM-REGISTERED 상태의 UE는 예외 없이 항상 PDN 연결을 하나 이상 가진다."
   answer: false
@@ -41,6 +43,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "UE가 Attach Request에 임시 식별자(GUTI) 대신 IMSI를 넣어 보내는 경우는?"
   choices:
@@ -59,6 +62,7 @@
   type: ox
   topic: EPC
   difficulty: advanced
+  importance: 1
   tags: [concept, message-flow]
   question: "Attach Request가 무결성 보호되어 있고 MME의 무결성 검사도 통과하면, MME는 Attach 중 인증(AKA)을 생략할 수 있다."
   answer: true
@@ -75,6 +79,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "임시 식별자 M-TMSI와 실제 가입자 식별자 IMSI의 대응 관계를 아는 곳은?"
   choices: ["UE와 MME", "UE와 HSS", "eNodeB와 MME", "MME와 S-GW"]
@@ -89,6 +94,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "Attach 중 MME가 S-GW에 기본 베어러(default bearer) 생성을 요청하는 메시지는?"
   choices:
@@ -108,6 +114,7 @@
   type: match
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [concept]
   question: "EPS의 이동성 관리(EMM)·연결 관리(ECM) 상태와 그 뜻을 짝지어라."
   pairs:
@@ -128,6 +135,7 @@
   type: order
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "ECM-IDLE 상태인 UE 앞으로 하향 데이터가 도착해, 망이 UE를 깨우는 흐름(Network Triggered Service Request)을 순서·방향까지 맞춰라."
   items:
@@ -153,6 +161,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "ECM-IDLE인 UE 앞으로 하향 패킷이 S-GW에 도착했다. S-GW가 하는 일은?"
   choices:
@@ -172,6 +181,7 @@
   type: short
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "S-GW가 ECM-IDLE UE 앞으로 하향 데이터가 왔다고 MME에 알리는 GTP 메시지의 약어는? (3글자)"
   answer: ["DDN"]
@@ -184,6 +194,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "MME는 ECM-IDLE UE를 찾기 위해 어느 eNodeB들에 Paging을 보내는가?"
   choices:
@@ -203,6 +214,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "ECM-IDLE 상태에서 Paging을 받은 UE가 MME에 보내는 NAS 메시지는?"
   choices: ["Service Request", "Attach Request", "Tracking Area Update Request", "Paging Response"]
@@ -218,6 +230,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "ECM-IDLE 상태인 UE의 위치를 MME는 어느 정도까지 아는가?"
   choices:
@@ -236,6 +249,7 @@
   type: ox
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "UE가 PSM이나 eDRX 상태라 지금 페이징할 수 없으면, MME는 DDN Ack로 S-GW에 하향 데이터를 더 오래 버퍼링하라고 요청할 수 있다."
   answer: true
@@ -250,6 +264,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "eDRX(확장 휴지 모드 DRX)가 적용된 UE 앞으로 DDN이 왔다. MME는 언제 Paging을 보내는가?"
   choices:
@@ -268,6 +283,7 @@
   type: order
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "ECM-IDLE UE가 보낼 데이터가 생겨 사용자 평면을 다시 세우는 흐름(UE triggered Service Request)을 순서·방향까지 맞춰라."
   items:
@@ -296,6 +312,7 @@
   type: order
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [message-flow]
   question: "일정 시간 데이터가 없어 eNodeB가 UE를 휴지(ECM-IDLE) 상태로 보내는 S1 release 흐름을 순서·방향까지 맞춰라."
   items:
@@ -322,6 +339,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "eNodeB가 S1 UE Context Release Request에 넣는 원인 값 중, 일정 시간 주고받은 데이터가 없을 때 쓰는 것은?"
   choices: ["User Inactivity", "O&M Intervention", "Unspecified Failure", "Radio Connection With UE Lost"]
@@ -338,6 +356,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "S1 release 중 Release Access Bearers Request를 받은 S-GW가 지우는 정보는?"
   choices:
@@ -356,6 +375,7 @@
   type: ox
   topic: EPC
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "S1 release로 UE가 ECM-IDLE이 되어도, non-GBR EPS 베어러는 MME와 S-GW에 그대로 남는다."
   answer: true
@@ -369,6 +389,7 @@
   type: ox
   topic: EPC
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "ECM-IDLE 상태가 되어도 eNodeB에는 그 UE의 컨텍스트가 남아 있다."
   answer: false
@@ -382,6 +403,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 2
   tags: [concept]
   question: "PSM(Power Saving Mode)을 쓰는 UE가 실제로 PSM에 들어가는 시점은?"
   choices:
@@ -402,6 +424,7 @@
   type: ox
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "UE가 PSM에 들어가면 MME는 그 UE를 EMM-DEREGISTERED 상태로 바꾼다."
   answer: false
@@ -415,6 +438,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept]
   question: "PSM에 들어간 UE가 다시 무선 기능을 켜고 망과 통신하는 경우는?"
   choices:
@@ -436,6 +460,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 3
   tags: [message-flow]
   question: "UE triggered Service Request에서 S-GW가 UE 쪽으로 하향 데이터를 보낼 수 있게 되는 시점은?"
   choices:
@@ -454,6 +479,7 @@
   type: ox
   topic: EPC
   difficulty: basic
+  importance: 2
   tags: [message-flow]
   question: "Service Request 뒤 UE의 업링크 데이터는 MME가 S-GW에 Modify Bearer Request를 보내기 전에 이미 S-GW에 도착할 수 있다."
   answer: true
@@ -467,6 +493,7 @@
   type: match
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [concept, transport]
   question: "EPC 레퍼런스 포인트와 그 구간·역할을 짝지어라."
   pairs:
@@ -485,6 +512,7 @@
   type: mcq
   topic: EPC
   difficulty: basic
+  importance: 3
   tags: [transport]
   question: "S1-U(eNodeB ↔ S-GW) 구간에서 사용자 패킷을 터널로 실어 나르는 프로토콜은?"
   choices: ["GTP-U", "GTP-C", "S1-AP", "Diameter"]
@@ -499,6 +527,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 3
   tags: [concept]
   question: "Control Plane CIoT 최적화를 쓰는 UE의 소량 업링크 데이터는 어떻게 망에 전달되는가?"
   choices:
@@ -519,6 +548,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 2
   tags: [concept, transport]
   question: "Control Plane CIoT 최적화에서 MME와 S-GW 사이에 사용자 데이터를 나르는 레퍼런스 포인트는?"
   choices: ["S11-U", "S1-U", "S11", "S5"]
@@ -533,6 +563,7 @@
   type: ox
   topic: EPC
   difficulty: advanced
+  importance: 1
   tags: [concept]
   question: "Control Plane CIoT 최적화에서 업링크 IP 헤더 압축(ROHC)은 eNodeB가 해제한다."
   answer: false
@@ -547,6 +578,7 @@
   type: mcq
   topic: EPC
   difficulty: advanced
+  importance: 1
   tags: [concept]
   question: "Control Plane CIoT 최적화로 업링크 데이터를 보내는 UE가, 이후 주고받을 데이터가 없다고 NAS PDU에 함께 알리는 정보는?"
   choices:

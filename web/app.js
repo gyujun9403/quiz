@@ -153,7 +153,6 @@
   // (그리드 칸 경계에 맞추면 lifeline이 칸 "중앙"에 있어서 살짝 어긋난다).
   // actors: 참가자 목록(레인 순서 고정). rows: [{msg, from, to}, ...] 위에서부터 순서대로.
   // onRowClick(rowIndex)를 주면 각 줄이 탭 가능해진다(방향 전환용) — 안 주면 읽기 전용.
-  var DIAGRAM_ROW_H = 44;
 
   // highlightStep(선택): r.stepIdx === highlightStep 인 화살표를 초록으로 강조(방금 확정한 단계).
   function renderDiagram(actors, rows, onRowClick, highlightStep) {
@@ -170,8 +169,8 @@
     });
     wrap.appendChild(header);
 
+    // 행은 위에서부터 차례로 쌓는다(라벨 → 화살표). 라벨이 여러 줄이면 그 행만 높아져서 겹치지 않는다.
     var body = el("div", { cls: "diagram-body" });
-    body.style.height = (Math.max(rows.length, 1) * DIAGRAM_ROW_H + 10) + "px";
 
     actors.forEach(function (a, i) {
       var line = el("div", { cls: "diagram-lifeline" });
@@ -189,14 +188,13 @@
       var hl = (highlightStep != null && r.stepIdx === highlightStep) ? " hl" : "";
       var bad = r.bad ? " bad" : ""; // 채점 후 틀린 줄(order)을 빨갛게 표시.
       var row = el("div", { cls: "diagram-row" + (onRowClick ? " tappable" : "") + hl + bad });
-      row.style.top = (idx * DIAGRAM_ROW_H) + "px";
 
       var msg = el("div", { cls: "diagram-msg", text: (idx + 1) + ". " + r.msg });
-      msg.style.left = x1 + "%";
+      msg.style.marginLeft = x1 + "%";
       msg.style.width = (x2 - x1) + "%";
 
       var line = el("div", { cls: "diagram-line" + (rev ? " rev" : "") });
-      line.style.left = x1 + "%";
+      line.style.marginLeft = x1 + "%";
       line.style.width = (x2 - x1) + "%";
 
       row.appendChild(msg);

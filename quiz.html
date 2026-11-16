@@ -234,8 +234,8 @@
   .feedback .explain { white-space: pre-wrap; line-height: 1.5; margin: 0 0 10px; }
   .feedback .ref { font-size: 12px; color: var(--muted); margin: 0 0 16px; }
   .diagram-scroll { overflow-x: auto; -webkit-overflow-scrolling: touch; margin: 0 -2px; }
-  .diagram { position: relative; margin: 2px 0 8px; font-size: 11px; }
-  .diagram-header { position: relative; height: 26px; }
+  .diagram { position: relative; margin: 2px 0 8px; font-size: 13px; }
+  .diagram-header { position: relative; height: 28px; }
   .diagram-actor {
     position: absolute;
     top: 0;
@@ -245,38 +245,40 @@
     border: 1px solid var(--border);
     border-radius: 6px;
     padding: 3px 6px;
+    font-size: 12px;
     font-weight: 700;
     color: var(--fg);
   }
-  .diagram-body { position: relative; margin-top: 14px; } /* 첫 줄의 여러 줄 라벨이 참가자 헤더를 가리지 않게 */
+  .diagram-body { position: relative; margin-top: 6px; padding-bottom: 8px; }
   .diagram-lifeline {
     position: absolute;
     top: 0;
     bottom: 0;
     border-left: 1px dashed var(--muted);
   }
-  .diagram-row { position: absolute; left: 0; right: 0; height: 44px; }
+  /* 행은 위에서부터 쌓인다(라벨 → 화살표). position: relative라서 점선 lifeline 위에 그려진다 */
+  .diagram-row { position: relative; padding: 8px 0 10px; }
   .diagram-msg {
-    position: absolute;
-    bottom: 24px; /* 화살표(top 22px) 바로 위에 붙여, 라벨이 두 줄이면 위쪽으로 늘어나게 한다 */
-    line-height: 1.25;
+    position: relative;
+    box-sizing: border-box;
+    line-height: 1.3;
     text-align: center;
     color: var(--muted);
     background: var(--card);
     padding: 0 4px;
+    margin-bottom: 5px;
   }
   .diagram-line {
-    position: absolute;
-    top: 22px;
+    position: relative;
     height: 1px;
     background: var(--fg);
   }
   .diagram-line::after {
     content: "▶";
     position: absolute;
-    top: -7px;
+    top: -6px;
     right: -2px;
-    font-size: 11px;
+    font-size: 12px;
     line-height: 1;
   }
   .diagram-line.rev::after {
@@ -661,7 +663,6 @@
   // (그리드 칸 경계에 맞추면 lifeline이 칸 "중앙"에 있어서 살짝 어긋난다).
   // actors: 참가자 목록(레인 순서 고정). rows: [{msg, from, to}, ...] 위에서부터 순서대로.
   // onRowClick(rowIndex)를 주면 각 줄이 탭 가능해진다(방향 전환용) — 안 주면 읽기 전용.
-  var DIAGRAM_ROW_H = 44;
 
   // highlightStep(선택): r.stepIdx === highlightStep 인 화살표를 초록으로 강조(방금 확정한 단계).
   function renderDiagram(actors, rows, onRowClick, highlightStep) {
@@ -678,8 +679,8 @@
     });
     wrap.appendChild(header);
 
+    // 행은 위에서부터 차례로 쌓는다(라벨 → 화살표). 라벨이 여러 줄이면 그 행만 높아져서 겹치지 않는다.
     var body = el("div", { cls: "diagram-body" });
-    body.style.height = (Math.max(rows.length, 1) * DIAGRAM_ROW_H + 10) + "px";
 
     actors.forEach(function (a, i) {
       var line = el("div", { cls: "diagram-lifeline" });
@@ -697,14 +698,13 @@
       var hl = (highlightStep != null && r.stepIdx === highlightStep) ? " hl" : "";
       var bad = r.bad ? " bad" : ""; // 채점 후 틀린 줄(order)을 빨갛게 표시.
       var row = el("div", { cls: "diagram-row" + (onRowClick ? " tappable" : "") + hl + bad });
-      row.style.top = (idx * DIAGRAM_ROW_H) + "px";
 
       var msg = el("div", { cls: "diagram-msg", text: (idx + 1) + ". " + r.msg });
-      msg.style.left = x1 + "%";
+      msg.style.marginLeft = x1 + "%";
       msg.style.width = (x2 - x1) + "%";
 
       var line = el("div", { cls: "diagram-line" + (rev ? " rev" : "") });
-      line.style.left = x1 + "%";
+      line.style.marginLeft = x1 + "%";
       line.style.width = (x2 - x1) + "%";
 
       row.appendChild(msg);

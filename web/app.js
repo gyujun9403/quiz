@@ -970,8 +970,10 @@
     var na = normText(ans);
     return GLOSS.filter(function (e) {
       if (inAns.indexOf(e) !== -1) return true;
-      if (findTerms(e.desc).some(function (h) { return inAns.indexOf(h.entry) !== -1; })) return true;
-      var nd = normText(e.desc + " " + (e.full || ""));
+      // 팝업에 보이는 글(뜻·풀네임·예시) 전체를 정답과 비교한다.
+      var shown = e.desc + " " + (e.when || "");
+      if (findTerms(shown).some(function (h) { return inAns.indexOf(h.entry) !== -1; })) return true;
+      var nd = normText(shown + " " + (e.full || ""));
       for (var i = 0; i + 5 <= na.length; i++) {
         if (nd.indexOf(na.substr(i, 5)) !== -1) return true;
       }
@@ -987,6 +989,7 @@
     if (t.full) head.appendChild(el("span", { cls: "term-full", text: t.full }));
     elTermPop.appendChild(head);
     elTermPop.appendChild(el("div", { text: t.desc }));
+    if (t.when) elTermPop.appendChild(el("div", { cls: "term-when", text: "예: " + t.when }));
     elTermPop.appendChild(el("div", { cls: "term-ref", text: t.ref + " · 탭하면 닫힘" }));
     elTermPop.hidden = false;
   }
@@ -1098,6 +1101,15 @@
     // 흐름 제목은 카드의 제목이라 크게, 순번(흐름 1/2)은 그 위에 작게 보여준다.
     box.appendChild(el("div", { cls: "card-kicker", text: "흐름 " + card.n + "/" + card.of }));
     box.appendChild(el("h3", { cls: "card-heading", text: card.fl.title }));
+    // 이 절차가 일어나는 단말의 상태·상황 예시(concepts.yaml의 when)
+    if (card.fl.when) {
+      var whenBox = el("div", { cls: "when-box" });
+      whenBox.appendChild(el("div", { cls: "when-head", text: "이럴 때 일어난다" }));
+      var ul = el("ul");
+      card.fl.when.forEach(function (w) { ul.appendChild(richNode("li", "", w)); });
+      whenBox.appendChild(ul);
+      box.appendChild(whenBox);
+    }
     var fr = flowActorsRows(qById[card.fl.id]);
     box.appendChild(renderDiagram(fr.actors, fr.rows, function (idx) {
       cState.hl = idx;
@@ -1245,6 +1257,7 @@
         item.appendChild(head);
         if (cState.open[key]) {
           item.appendChild(proseNode(t.desc, "sheet-term-desc", false));
+          if (t.when) item.appendChild(richNode("div", "term-when", "예: " + t.when));
           item.appendChild(el("div", { cls: "term-ref", text: t.ref }));
         }
         terms.appendChild(item);

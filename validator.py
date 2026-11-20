@@ -443,10 +443,15 @@ def validate_concepts(pages, sets, questions):
         if not isinstance(pg.get("summary"), str) or not pg["summary"].strip():
             errors.append(f"[{loc}] summary가 비어 있음")
         for j, fl in enumerate(pg.get("flows") or []):
-            if not isinstance(fl, dict) or set(fl) != {"id", "title", "notes"} or not all(
+            if not isinstance(fl, dict) or not {"id", "title", "notes"} <= set(fl) \
+                    or set(fl) - {"id", "title", "notes", "when"} or not all(
                     isinstance(fl[k], str) and fl[k].strip() for k in ("id", "title")):
-                errors.append(f"[{loc}] flows[{j}]는 {{id, title, notes}} 매핑이어야 함")
+                errors.append(f"[{loc}] flows[{j}]는 {{id, title, notes, when(선택)}} 매핑이어야 함")
                 continue
+            # when(선택): 이 절차가 일어나는 단말의 상태·상황 예시 목록
+            if "when" in fl and (not isinstance(fl["when"], list) or not fl["when"]
+                                 or not all(isinstance(x, str) and x.strip() for x in fl["when"])):
+                errors.append(f"[{loc}] flows[{j}] when은 비어 있지 않은 문자열 리스트여야 함")
             q = q_by_id.get(fl["id"])
             if not q or q.get("type") not in ("order", "steps"):
                 errors.append(f"[{loc}] flows[{j}] {fl['id']}: 없는 문제이거나 order/steps가 아님")
@@ -471,7 +476,7 @@ def validate_concepts(pages, sets, questions):
             if not isinstance(t, dict):
                 errors.append(f"[{tl}] 매핑(dict)이 아님")
                 continue
-            known = {"term", "full", "desc", "ref", "match"}
+            known = {"term", "full", "desc", "ref", "match", "when"}
             if set(t) - known:
                 errors.append(f"[{tl}] 알 수 없는 필드: {sorted(set(t) - known)}")
             if "match" in t and (not isinstance(t["match"], list) or not t["match"] or not all(
@@ -482,6 +487,9 @@ def validate_concepts(pages, sets, questions):
                     errors.append(f"[{tl}] {k}가 비어 있음 (ref는 근거 조항, 필수)")
             if "full" in t and (not isinstance(t["full"], str) or not t["full"].strip()):
                 errors.append(f"[{tl}] full이 비어 있음")
+            # when(선택): 이 개념이 나타나는 단말의 상태·상황 예시 한두 문장
+            if "when" in t and (not isinstance(t["when"], str) or not t["when"].strip()):
+                errors.append(f"[{tl}] when이 비어 있음")
             if t.get("term") in seen:
                 errors.append(f"[{tl}] 같은 페이지에 용어 중복: {t.get('term')}")
             seen.add(t.get("term"))
